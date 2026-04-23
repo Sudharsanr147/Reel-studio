@@ -1374,63 +1374,63 @@ var db = null;
 var storage = null;
 var auth = null;
 
-var CONFIG_KEY = "reel_firebase_config";
+var CONFIG_KEY = \u0022reel_firebase_config\u0022;
 
 /* ============ HELPERS ============ */
 
 function $(id) { return document.getElementById(id); }
 
 function esc(s) {
-  if (s == null) return "";
+  if (s == null) return \u0022\u0022;
   return String(s)
-    .split("&").join("&amp;")
-    .split("<").join("&lt;")
-    .split(">").join("&gt;")
-    .split('"').join("&quot;")
-    .split("'").join("&#39;");
+    .split(\u0022&\u0022).join(\u0022&amp;\u0022)
+    .split(\u0022<\u0022).join(\u0022&lt;\u0022)
+    .split(\u0022>\u0022).join(\u0022&gt;\u0022)
+    .split('\u0022').join(\u0022&quot;\u0022)
+    .split(\u0022'\u0022).join(\u0022&#39;\u0022);
 }
 
 function toast(msg, isError) {
-  var el = $("toast");
+  var el = $(\u0022toast\u0022);
   el.textContent = msg;
-  if (isError) el.classList.add("error");
-  else el.classList.remove("error");
-  el.classList.add("show");
-  setTimeout(function () { el.classList.remove("show"); }, 2400);
+  if (isError) el.classList.add(\u0022error\u0022);
+  else el.classList.remove(\u0022error\u0022);
+  el.classList.add(\u0022show\u0022);
+  setTimeout(function () { el.classList.remove(\u0022show\u0022); }, 2400);
 }
 
 function showScreen(id) {
-  var loading = $("loading-screen");
-  if (loading) loading.style.display = "none";
-  ["auth-screen", "setup-screen", "app"].forEach(function (s) {
+  var loading = $(\u0022loading-screen\u0022);
+  if (loading) loading.style.display = \u0022none\u0022;
+  [\u0022auth-screen\u0022, \u0022setup-screen\u0022, \u0022app\u0022].forEach(function (s) {
     var el = $(s);
-    if (s === id) el.classList.remove("hidden");
-    else el.classList.add("hidden");
+    if (s === id) el.classList.remove(\u0022hidden\u0022);
+    else el.classList.add(\u0022hidden\u0022);
   });
 }
 
 function openDrawer(id) {
-  $("modal-backdrop").classList.add("open");
-  $(id).classList.add("open");
-  document.body.style.overflow = "hidden";
+  $(\u0022modal-backdrop\u0022).classList.add(\u0022open\u0022);
+  $(id).classList.add(\u0022open\u0022);
+  document.body.style.overflow = \u0022hidden\u0022;
 }
 
 function closeAllDrawers() {
-  $("modal-backdrop").classList.remove("open");
-  var drawers = document.querySelectorAll(".drawer");
-  for (var i = 0; i < drawers.length; i++) drawers[i].classList.remove("open");
-  document.body.style.overflow = "";
+  $(\u0022modal-backdrop\u0022).classList.remove(\u0022open\u0022);
+  var drawers = document.querySelectorAll(\u0022.drawer\u0022);
+  for (var i = 0; i < drawers.length; i++) drawers[i].classList.remove(\u0022open\u0022);
+  document.body.style.overflow = \u0022\u0022;
   STATE.pendingImage = null;
 }
 
 function setUploadPreview(labelId, url) {
   var el = $(labelId);
   if (url) {
-    el.classList.add("has-image");
-    el.style.backgroundImage = "url('" + url + "')";
+    el.classList.add(\u0022has-image\u0022);
+    el.style.backgroundImage = \u0022url('\u0022 + url + \u0022')\u0022;
   } else {
-    el.classList.remove("has-image");
-    el.style.backgroundImage = "";
+    el.classList.remove(\u0022has-image\u0022);
+    el.style.backgroundImage = \u0022\u0022;
   }
 }
 
@@ -1444,7 +1444,7 @@ function initFirebase(config) {
     storage = firebase.storage();
     return true;
   } catch (e) {
-    console.error("Firebase init failed:", e);
+    console.error(\u0022Firebase init failed:\u0022, e);
     return false;
   }
 }
@@ -1452,49 +1452,49 @@ function initFirebase(config) {
 function bootstrap() {
   var stored = localStorage.getItem(CONFIG_KEY);
   if (!stored) {
-    showScreen("setup-screen");
+    showScreen(\u0022setup-screen\u0022);
     return;
   }
   try {
     var config = JSON.parse(stored);
     if (!initFirebase(config)) {
-      showScreen("setup-screen");
+      showScreen(\u0022setup-screen\u0022);
       return;
     }
     auth.onAuthStateChanged(function (user) {
       if (user) {
         STATE.user = user;
-        $("auth-email-display").textContent = user.email;
-        showScreen("app");
+        $(\u0022auth-email-display\u0022).textContent = user.email;
+        showScreen(\u0022app\u0022);
         loadProjects();
       } else {
-        showScreen("auth-screen");
+        showScreen(\u0022auth-screen\u0022);
       }
     });
   } catch (e) {
     console.error(e);
-    showScreen("setup-screen");
+    showScreen(\u0022setup-screen\u0022);
   }
 }
 
 /* ============ SETUP SCREEN ============ */
 
 function handleSaveConfig() {
-  var raw = $("firebase-config-input").value.trim();
+  var raw = $(\u0022firebase-config-input\u0022).value.trim();
   var config;
   try {
-    if (raw.charAt(0) !== "{") throw new Error("Must start with {");
+    if (raw.charAt(0) !== \u0022{\u0022) throw new Error(\u0022Must start with {\u0022);
     var jsonStr = raw
-      .replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":')
-      .replace(/'/g, '"')
-      .replace(/,(\s*[}\]])/g, "$1");
+      .replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1\u0022$2\u0022:')
+      .replace(/'/g, '\u0022')
+      .replace(/,(\s*[}\]])/g, \u0022$1\u0022);
     config = JSON.parse(jsonStr);
   } catch (e) {
-    toast("Invalid config. Paste the full firebaseConfig object.", true);
+    toast(\u0022Invalid config. Paste the full firebaseConfig object.\u0022, true);
     return;
   }
   if (!config.apiKey || !config.databaseURL) {
-    toast("Config must include apiKey and databaseURL", true);
+    toast(\u0022Config must include apiKey and databaseURL\u0022, true);
     return;
   }
   localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
@@ -1504,17 +1504,17 @@ function handleSaveConfig() {
 /* ============ AUTH ============ */
 
 function handleSignIn() {
-  var email = $("auth-email").value.trim();
-  var password = $("auth-password").value;
-  var errEl = $("auth-error");
-  errEl.textContent = "";
+  var email = $(\u0022auth-email\u0022).value.trim();
+  var password = $(\u0022auth-password\u0022).value;
+  var errEl = $(\u0022auth-error\u0022);
+  errEl.textContent = \u0022\u0022;
   if (!email || !password) {
-    errEl.textContent = "Email and password required.";
+    errEl.textContent = \u0022Email and password required.\u0022;
     return;
   }
   auth.signInWithEmailAndPassword(email, password).catch(function (e) {
-    var code = e.code || "";
-    if (code === "auth/user-not-found" || code === "auth/invalid-login-credentials" || code === "auth/invalid-credential") {
+    var code = e.code || \u0022\u0022;
+    if (code === \u0022auth/user-not-found\u0022 || code === \u0022auth/invalid-login-credentials\u0022 || code === \u0022auth/invalid-credential\u0022) {
       auth.createUserWithEmailAndPassword(email, password).catch(function (e2) {
         errEl.textContent = e2.message;
       });
@@ -1529,22 +1529,22 @@ function handleSignIn() {
 function navigateHome() {
   STATE.projectId = null;
   STATE.project = null;
-  $("view-project").classList.add("hidden");
-  $("view-projects").classList.remove("hidden");
+  $(\u0022view-project\u0022).classList.add(\u0022hidden\u0022);
+  $(\u0022view-projects\u0022).classList.remove(\u0022hidden\u0022);
   renderBreadcrumb();
   loadProjects();
 }
 
 function renderBreadcrumb() {
-  var bc = $("breadcrumb");
+  var bc = $(\u0022breadcrumb\u0022);
   if (!STATE.project) {
-    bc.innerHTML = '<span class="current">All Projects</span>';
+    bc.innerHTML = '<span class=\u0022current\u0022>All Projects</span>';
   } else {
     bc.innerHTML =
-      '<button id="crumb-home">Projects</button>' +
-      '<span class="sep">/</span>' +
-      '<span class="current">' + esc(STATE.project.title) + '</span>';
-    var homeBtn = $("crumb-home");
+      '<button id=\u0022crumb-home\u0022>Projects</button>' +
+      '<span class=\u0022sep\u0022>/</span>' +
+      '<span class=\u0022current\u0022>' + esc(STATE.project.title) + '</span>';
+    var homeBtn = $(\u0022crumb-home\u0022);
     if (homeBtn) homeBtn.onclick = navigateHome;
   }
 }
@@ -1552,15 +1552,15 @@ function renderBreadcrumb() {
 /* ============ DB REFS ============ */
 
 function uid() { return STATE.user.uid; }
-function projectsRef() { return db.ref("users/" + uid() + "/projects"); }
-function projectRef(pid) { return db.ref("users/" + uid() + "/projects/" + pid); }
-function entityRef(pid, type) { return db.ref("users/" + uid() + "/data/" + pid + "/" + type); }
+function projectsRef() { return db.ref(\u0022users/\u0022 + uid() + \u0022/projects\u0022); }
+function projectRef(pid) { return db.ref(\u0022users/\u0022 + uid() + \u0022/projects/\u0022 + pid); }
+function entityRef(pid, type) { return db.ref(\u0022users/\u0022 + uid() + \u0022/data/\u0022 + pid + \u0022/\u0022 + type); }
 
 /* ============ PROJECTS LIST ============ */
 
 function loadProjects() {
-  var grid = $("projects-grid");
-  projectsRef().once("value").then(function (snap) {
+  var grid = $(\u0022projects-grid\u0022);
+  projectsRef().once(\u0022value\u0022).then(function (snap) {
     var data = snap.val() || {};
     var entries = Object.keys(data).map(function (k) {
       return [k, data[k]];
@@ -1568,19 +1568,19 @@ function loadProjects() {
     entries.sort(function (a, b) {
       return (b[1].updatedAt || 0) - (a[1].updatedAt || 0);
     });
-    $("projects-count").textContent = entries.length + " ITEM" + (entries.length === 1 ? "" : "S");
+    $(\u0022projects-count\u0022).textContent = entries.length + \u0022 ITEM\u0022 + (entries.length === 1 ? \u0022\u0022 : \u0022S\u0022);
 
-    var html = "";
+    var html = \u0022\u0022;
     for (var i = 0; i < entries.length; i++) {
       var id = entries[i][0];
       var p = entries[i][1];
       var counts = p.counts || {};
       html +=
-        '<button class="project-card" data-project-id="' + id + '">' +
-          '<span class="tag">' + esc(p.genre || "UNTITLED GENRE") + '</span>' +
+        '<button class=\u0022project-card\u0022 data-project-id=\u0022' + id + '\u0022>' +
+          '<span class=\u0022tag\u0022>' + esc(p.genre || \u0022UNTITLED GENRE\u0022) + '</span>' +
           '<h3>' + esc(p.title) + '</h3>' +
-          '<p class="logline">' + esc(p.logline || "No logline yet.") + '</p>' +
-          '<div class="stats">' +
+          '<p class=\u0022logline\u0022>' + esc(p.logline || \u0022No logline yet.\u0022) + '</p>' +
+          '<div class=\u0022stats\u0022>' +
             '<span><strong>' + (counts.characters || 0) + '</strong>Cast</span>' +
             '<span><strong>' + (counts.locations || 0) + '</strong>Sets</span>' +
             '<span><strong>' + (counts.scenes || 0) + '</strong>Scenes</span>' +
@@ -1588,52 +1588,52 @@ function loadProjects() {
         '</button>';
     }
     html +=
-      '<button class="new-project-card" id="btn-new-project">' +
-        '<div class="plus-big">+</div>' +
+      '<button class=\u0022new-project-card\u0022 id=\u0022btn-new-project\u0022>' +
+        '<div class=\u0022plus-big\u0022>+</div>' +
         '<span>New Project</span>' +
       '</button>';
 
     grid.innerHTML = html;
 
-    var cards = grid.querySelectorAll(".project-card");
+    var cards = grid.querySelectorAll(\u0022.project-card\u0022);
     for (var j = 0; j < cards.length; j++) {
       (function (card) {
-        card.onclick = function () { openProject(card.getAttribute("data-project-id")); };
+        card.onclick = function () { openProject(card.getAttribute(\u0022data-project-id\u0022)); };
       })(cards[j]);
     }
-    $("btn-new-project").onclick = function () { openProjectForm(); };
+    $(\u0022btn-new-project\u0022).onclick = function () { openProjectForm(); };
   });
 }
 
 function openProjectForm(projectId) {
   STATE.editingId = projectId || null;
-  var p = projectId ? STATE.project : { title: "", logline: "", genre: "" };
-  $("drawer-project-title").textContent = projectId ? "Edit Project" : "New Project";
-  $("project-form-title").value = p.title || "";
-  $("project-form-logline").value = p.logline || "";
-  $("project-form-genre").value = p.genre || "";
-  openDrawer("drawer-project");
+  var p = projectId ? STATE.project : { title: \u0022\u0022, logline: \u0022\u0022, genre: \u0022\u0022 };
+  $(\u0022drawer-project-title\u0022).textContent = projectId ? \u0022Edit Project\u0022 : \u0022New Project\u0022;
+  $(\u0022project-form-title\u0022).value = p.title || \u0022\u0022;
+  $(\u0022project-form-logline\u0022).value = p.logline || \u0022\u0022;
+  $(\u0022project-form-genre\u0022).value = p.genre || \u0022\u0022;
+  openDrawer(\u0022drawer-project\u0022);
 }
 
 function handleProjectSave() {
-  var title = $("project-form-title").value.trim();
-  if (!title) { toast("Title is required", true); return; }
+  var title = $(\u0022project-form-title\u0022).value.trim();
+  if (!title) { toast(\u0022Title is required\u0022, true); return; }
   var payload = {
     title: title,
-    logline: $("project-form-logline").value.trim(),
-    genre: $("project-form-genre").value.trim(),
+    logline: $(\u0022project-form-logline\u0022).value.trim(),
+    genre: $(\u0022project-form-genre\u0022).value.trim(),
     updatedAt: Date.now()
   };
 
   if (STATE.editingId) {
     projectRef(STATE.editingId).update(payload).then(function () {
       STATE.project = Object.assign({}, STATE.project, payload);
-      $("project-title").textContent = title;
-      $("project-eyebrow").textContent = payload.genre || "PROJECT";
+      $(\u0022project-title\u0022).textContent = title;
+      $(\u0022project-eyebrow\u0022).textContent = payload.genre || \u0022PROJECT\u0022;
       renderBreadcrumb();
       closeAllDrawers();
-      toast("Project saved.");
-    }).catch(function (e) { toast("Save failed: " + e.message, true); });
+      toast(\u0022Project saved.\u0022);
+    }).catch(function (e) { toast(\u0022Save failed: \u0022 + e.message, true); });
   } else {
     payload.createdAt = Date.now();
     payload.counts = { characters: 0, locations: 0, scenes: 0 };
@@ -1642,60 +1642,60 @@ function handleProjectSave() {
       STATE.projectId = ref.key;
       openProject(ref.key);
       closeAllDrawers();
-      toast("Project created.");
-    }).catch(function (e) { toast("Save failed: " + e.message, true); });
+      toast(\u0022Project created.\u0022);
+    }).catch(function (e) { toast(\u0022Save failed: \u0022 + e.message, true); });
   }
 }
 
 function openProject(projectId) {
   STATE.projectId = projectId;
-  projectRef(projectId).once("value").then(function (snap) {
+  projectRef(projectId).once(\u0022value\u0022).then(function (snap) {
     STATE.project = snap.val();
-    if (!STATE.project) { toast("Project not found", true); return; }
+    if (!STATE.project) { toast(\u0022Project not found\u0022, true); return; }
 
-    $("view-projects").classList.add("hidden");
-    $("view-project").classList.remove("hidden");
-    $("project-title").textContent = STATE.project.title;
-    $("project-eyebrow").textContent = STATE.project.genre || "PROJECT";
+    $(\u0022view-projects\u0022).classList.add(\u0022hidden\u0022);
+    $(\u0022view-project\u0022).classList.remove(\u0022hidden\u0022);
+    $(\u0022project-title\u0022).textContent = STATE.project.title;
+    $(\u0022project-eyebrow\u0022).textContent = STATE.project.genre || \u0022PROJECT\u0022;
 
     var createdDate = STATE.project.createdAt
-      ? new Date(STATE.project.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
-      : "\u2014";
-    var metaHtml = "<span>Created " + createdDate + "</span>";
+      ? new Date(STATE.project.createdAt).toLocaleDateString(\u0022en-GB\u0022, { day: \u00222-digit\u0022, month: \u0022short\u0022, year: \u0022numeric\u0022 })
+      : \u0022\u2014\u0022;
+    var metaHtml = \u0022<span>Created \u0022 + createdDate + \u0022</span>\u0022;
     if (STATE.project.logline) {
-      metaHtml += '<span style="font-style:italic;font-family:Fraunces,serif;text-transform:none;letter-spacing:0;">' +
+      metaHtml += '<span style=\u0022font-style:italic;font-family:Fraunces,serif;text-transform:none;letter-spacing:0;\u0022>' +
         esc(STATE.project.logline) + '</span>';
     }
-    $("project-meta").innerHTML = metaHtml;
+    $(\u0022project-meta\u0022).innerHTML = metaHtml;
 
     renderBreadcrumb();
-    switchTab("characters");
+    switchTab(\u0022characters\u0022);
     loadEntities();
   });
 }
 
 function deleteCurrentProject() {
-  if (!confirm("Delete project \"" + STATE.project.title + "\" and all its data? This cannot be undone.")) return;
+  if (!confirm(\u0022Delete project \\u0022\u0022 + STATE.project.title + \u0022\\u0022 and all its data? This cannot be undone.\u0022)) return;
   var pid = STATE.projectId;
   projectRef(pid).remove().then(function () {
-    return db.ref("users/" + uid() + "/data/" + pid).remove();
+    return db.ref(\u0022users/\u0022 + uid() + \u0022/data/\u0022 + pid).remove();
   }).then(function () {
-    toast("Project deleted.");
+    toast(\u0022Project deleted.\u0022);
     navigateHome();
-  }).catch(function (e) { toast("Delete failed: " + e.message, true); });
+  }).catch(function (e) { toast(\u0022Delete failed: \u0022 + e.message, true); });
 }
 
 /* ============ TABS ============ */
 
 function switchTab(name) {
-  var btns = document.querySelectorAll(".tab-btn");
+  var btns = document.querySelectorAll(\u0022.tab-btn\u0022);
   for (var i = 0; i < btns.length; i++) {
-    if (btns[i].getAttribute("data-tab") === name) btns[i].classList.add("active");
-    else btns[i].classList.remove("active");
+    if (btns[i].getAttribute(\u0022data-tab\u0022) === name) btns[i].classList.add(\u0022active\u0022);
+    else btns[i].classList.remove(\u0022active\u0022);
   }
-  var contents = document.querySelectorAll(".tab-content");
-  for (var j = 0; j < contents.length; j++) contents[j].classList.add("hidden");
-  $("tab-" + name).classList.remove("hidden");
+  var contents = document.querySelectorAll(\u0022.tab-content\u0022);
+  for (var j = 0; j < contents.length; j++) contents[j].classList.add(\u0022hidden\u0022);
+  $(\u0022tab-\u0022 + name).classList.remove(\u0022hidden\u0022);
 }
 
 /* ============ LOAD ENTITIES ============ */
@@ -1703,9 +1703,9 @@ function switchTab(name) {
 function loadEntities() {
   var pid = STATE.projectId;
   Promise.all([
-    entityRef(pid, "characters").once("value"),
-    entityRef(pid, "locations").once("value"),
-    entityRef(pid, "scenes").once("value")
+    entityRef(pid, \u0022characters\u0022).once(\u0022value\u0022),
+    entityRef(pid, \u0022locations\u0022).once(\u0022value\u0022),
+    entityRef(pid, \u0022scenes\u0022).once(\u0022value\u0022)
   ]).then(function (results) {
     STATE.characters = results[0].val() || {};
     STATE.locations = results[1].val() || {};
@@ -1721,47 +1721,47 @@ function updateCounts() {
   var c = Object.keys(STATE.characters).length;
   var l = Object.keys(STATE.locations).length;
   var s = Object.keys(STATE.scenes).length;
-  $("badge-characters").textContent = c;
-  $("badge-locations").textContent = l;
-  $("badge-scenes").textContent = s;
+  $(\u0022badge-characters\u0022).textContent = c;
+  $(\u0022badge-locations\u0022).textContent = l;
+  $(\u0022badge-scenes\u0022).textContent = s;
   projectRef(STATE.projectId).update({ counts: { characters: c, locations: l, scenes: s } });
 }
 
 /* ============ CHARACTERS ============ */
 
 function renderCharacters() {
-  var list = $("characters-list");
+  var list = $(\u0022characters-list\u0022);
   var ids = Object.keys(STATE.characters);
   if (ids.length === 0) {
     list.innerHTML =
-      '<div class="empty-state">' +
+      '<div class=\u0022empty-state\u0022>' +
         '<h3>Cast the film.</h3>' +
         '<p>Add each character once - name, description, personality, reference photo. Reference them by name in every scene.</p>' +
-        '<button class="btn primary" id="btn-first-char">Add First Character</button>' +
+        '<button class=\u0022btn primary\u0022 id=\u0022btn-first-char\u0022>Add First Character</button>' +
       '</div>';
-    $("btn-first-char").onclick = function () { openCharacterForm(); };
+    $(\u0022btn-first-char\u0022).onclick = function () { openCharacterForm(); };
     return;
   }
-  var html = "";
+  var html = \u0022\u0022;
   for (var i = 0; i < ids.length; i++) {
     var id = ids[i];
     var c = STATE.characters[id];
-    var thumbStyle = c.photoUrl ? ' style="background-image:url(\'' + esc(c.photoUrl) + '\')"' : "";
-    var thumbClass = c.photoUrl ? "thumb" : "thumb empty";
+    var thumbStyle = c.photoUrl ? ' style=\u0022background-image:url(\'' + esc(c.photoUrl) + '\')\u0022' : \u0022\u0022;
+    var thumbClass = c.photoUrl ? \u0022thumb\u0022 : \u0022thumb empty\u0022;
     html +=
-      '<button class="entity-card" data-char-id="' + id + '">' +
-        '<div class="' + thumbClass + '"' + thumbStyle + '></div>' +
-        '<div class="body">' +
+      '<button class=\u0022entity-card\u0022 data-char-id=\u0022' + id + '\u0022>' +
+        '<div class=\u0022' + thumbClass + '\u0022' + thumbStyle + '></div>' +
+        '<div class=\u0022body\u0022>' +
           '<h4>' + esc(c.name) + '</h4>' +
-          '<div class="desc">' + esc(c.appearance || c.personality || "No description.") + '</div>' +
+          '<div class=\u0022desc\u0022>' + esc(c.appearance || c.personality || \u0022No description.\u0022) + '</div>' +
         '</div>' +
       '</button>';
   }
   list.innerHTML = html;
-  var cards = list.querySelectorAll("[data-char-id]");
+  var cards = list.querySelectorAll(\u0022[data-char-id]\u0022);
   for (var j = 0; j < cards.length; j++) {
     (function (card) {
-      card.onclick = function () { openCharacterForm(card.getAttribute("data-char-id")); };
+      card.onclick = function () { openCharacterForm(card.getAttribute(\u0022data-char-id\u0022)); };
     })(cards[j]);
   }
 }
@@ -1770,31 +1770,31 @@ function openCharacterForm(characterId) {
   STATE.editingId = characterId || null;
   STATE.pendingImage = null;
   var c = characterId ? STATE.characters[characterId] : {};
-  $("drawer-character-title").textContent = characterId ? "Edit Character" : "New Character";
-  $("char-form-name").value = c.name || "";
-  $("char-form-appearance").value = c.appearance || "";
-  $("char-form-personality").value = c.personality || "";
-  $("char-form-voice").value = c.voice || "";
-  setUploadPreview("char-upload-label", c.photoUrl || null);
-  if (characterId) $("char-form-delete").classList.remove("hidden");
-  else $("char-form-delete").classList.add("hidden");
-  openDrawer("drawer-character");
+  $(\u0022drawer-character-title\u0022).textContent = characterId ? \u0022Edit Character\u0022 : \u0022New Character\u0022;
+  $(\u0022char-form-name\u0022).value = c.name || \u0022\u0022;
+  $(\u0022char-form-appearance\u0022).value = c.appearance || \u0022\u0022;
+  $(\u0022char-form-personality\u0022).value = c.personality || \u0022\u0022;
+  $(\u0022char-form-voice\u0022).value = c.voice || \u0022\u0022;
+  setUploadPreview(\u0022char-upload-label\u0022, c.photoUrl || null);
+  if (characterId) $(\u0022char-form-delete\u0022).classList.remove(\u0022hidden\u0022);
+  else $(\u0022char-form-delete\u0022).classList.add(\u0022hidden\u0022);
+  openDrawer(\u0022drawer-character\u0022);
 }
 
 function handleCharacterSave() {
-  var name = $("char-form-name").value.trim();
-  if (!name) { toast("Name required", true); return; }
-  var btn = $("char-form-save");
+  var name = $(\u0022char-form-name\u0022).value.trim();
+  if (!name) { toast(\u0022Name required\u0022, true); return; }
+  var btn = $(\u0022char-form-save\u0022);
   btn.disabled = true;
-  btn.innerHTML = '<span class="loader"></span> Saving...';
+  btn.innerHTML = '<span class=\u0022loader\u0022></span> Saving...';
 
   var pid = STATE.projectId;
-  var id = STATE.editingId || entityRef(pid, "characters").push().key;
+  var id = STATE.editingId || entityRef(pid, \u0022characters\u0022).push().key;
   var photoUrl = (STATE.characters[id] && STATE.characters[id].photoUrl) || null;
 
   var uploadPromise;
   if (STATE.pendingImage) {
-    var path = "users/" + uid() + "/data/" + pid + "/characters/" + id + ".jpg";
+    var path = \u0022users/\u0022 + uid() + \u0022/data/\u0022 + pid + \u0022/characters/\u0022 + id + \u0022.jpg\u0022;
     var ref = storage.ref(path);
     uploadPromise = ref.put(STATE.pendingImage).then(function () { return ref.getDownloadURL(); }).then(function (url) { photoUrl = url; });
   } else {
@@ -1804,74 +1804,74 @@ function handleCharacterSave() {
   uploadPromise.then(function () {
     var payload = {
       name: name,
-      appearance: $("char-form-appearance").value.trim(),
-      personality: $("char-form-personality").value.trim(),
-      voice: $("char-form-voice").value.trim(),
+      appearance: $(\u0022char-form-appearance\u0022).value.trim(),
+      personality: $(\u0022char-form-personality\u0022).value.trim(),
+      voice: $(\u0022char-form-voice\u0022).value.trim(),
       photoUrl: photoUrl,
       updatedAt: Date.now()
     };
-    return entityRef(pid, "characters").child(id).update(payload).then(function () {
+    return entityRef(pid, \u0022characters\u0022).child(id).update(payload).then(function () {
       STATE.characters[id] = Object.assign({}, STATE.characters[id] || {}, payload);
       renderCharacters();
       updateCounts();
       closeAllDrawers();
-      toast("Character saved.");
+      toast(\u0022Character saved.\u0022);
     });
   }).catch(function (e) {
-    toast("Save failed: " + e.message, true);
+    toast(\u0022Save failed: \u0022 + e.message, true);
   }).then(function () {
     btn.disabled = false;
-    btn.textContent = "Save Character";
+    btn.textContent = \u0022Save Character\u0022;
   });
 }
 
 function handleCharacterDelete() {
-  if (!confirm("Delete this character?")) return;
+  if (!confirm(\u0022Delete this character?\u0022)) return;
   var id = STATE.editingId;
-  entityRef(STATE.projectId, "characters").child(id).remove().then(function () {
+  entityRef(STATE.projectId, \u0022characters\u0022).child(id).remove().then(function () {
     delete STATE.characters[id];
     renderCharacters();
     updateCounts();
     closeAllDrawers();
-    toast("Character deleted.");
+    toast(\u0022Character deleted.\u0022);
   });
 }
 
 /* ============ LOCATIONS ============ */
 
 function renderLocations() {
-  var list = $("locations-list");
+  var list = $(\u0022locations-list\u0022);
   var ids = Object.keys(STATE.locations);
   if (ids.length === 0) {
     list.innerHTML =
-      '<div class="empty-state">' +
+      '<div class=\u0022empty-state\u0022>' +
         '<h3>Scout your sets.</h3>' +
         '<p>Define each location once. Scenes reuse them, so the visual language stays consistent.</p>' +
-        '<button class="btn primary" id="btn-first-loc">Add First Location</button>' +
+        '<button class=\u0022btn primary\u0022 id=\u0022btn-first-loc\u0022>Add First Location</button>' +
       '</div>';
-    $("btn-first-loc").onclick = function () { openLocationForm(); };
+    $(\u0022btn-first-loc\u0022).onclick = function () { openLocationForm(); };
     return;
   }
-  var html = "";
+  var html = \u0022\u0022;
   for (var i = 0; i < ids.length; i++) {
     var id = ids[i];
     var l = STATE.locations[id];
-    var thumbStyle = l.photoUrl ? ' style="background-image:url(\'' + esc(l.photoUrl) + '\')"' : "";
-    var thumbClass = l.photoUrl ? "thumb" : "thumb empty";
+    var thumbStyle = l.photoUrl ? ' style=\u0022background-image:url(\'' + esc(l.photoUrl) + '\')\u0022' : \u0022\u0022;
+    var thumbClass = l.photoUrl ? \u0022thumb\u0022 : \u0022thumb empty\u0022;
     html +=
-      '<button class="entity-card" data-loc-id="' + id + '">' +
-        '<div class="' + thumbClass + '"' + thumbStyle + '></div>' +
-        '<div class="body">' +
+      '<button class=\u0022entity-card\u0022 data-loc-id=\u0022' + id + '\u0022>' +
+        '<div class=\u0022' + thumbClass + '\u0022' + thumbStyle + '></div>' +
+        '<div class=\u0022body\u0022>' +
           '<h4>' + esc(l.name) + '</h4>' +
-          '<div class="desc">' + esc(l.description || l.mood || "No description.") + '</div>' +
+          '<div class=\u0022desc\u0022>' + esc(l.description || l.mood || \u0022No description.\u0022) + '</div>' +
         '</div>' +
       '</button>';
   }
   list.innerHTML = html;
-  var cards = list.querySelectorAll("[data-loc-id]");
+  var cards = list.querySelectorAll(\u0022[data-loc-id]\u0022);
   for (var j = 0; j < cards.length; j++) {
     (function (card) {
-      card.onclick = function () { openLocationForm(card.getAttribute("data-loc-id")); };
+      card.onclick = function () { openLocationForm(card.getAttribute(\u0022data-loc-id\u0022)); };
     })(cards[j]);
   }
 }
@@ -1880,31 +1880,31 @@ function openLocationForm(locationId) {
   STATE.editingId = locationId || null;
   STATE.pendingImage = null;
   var l = locationId ? STATE.locations[locationId] : {};
-  $("drawer-location-title").textContent = locationId ? "Edit Location" : "New Location";
-  $("loc-form-name").value = l.name || "";
-  $("loc-form-description").value = l.description || "";
-  $("loc-form-mood").value = l.mood || "";
-  $("loc-form-timeofday").value = l.timeOfDay || "";
-  setUploadPreview("loc-upload-label", l.photoUrl || null);
-  if (locationId) $("loc-form-delete").classList.remove("hidden");
-  else $("loc-form-delete").classList.add("hidden");
-  openDrawer("drawer-location");
+  $(\u0022drawer-location-title\u0022).textContent = locationId ? \u0022Edit Location\u0022 : \u0022New Location\u0022;
+  $(\u0022loc-form-name\u0022).value = l.name || \u0022\u0022;
+  $(\u0022loc-form-description\u0022).value = l.description || \u0022\u0022;
+  $(\u0022loc-form-mood\u0022).value = l.mood || \u0022\u0022;
+  $(\u0022loc-form-timeofday\u0022).value = l.timeOfDay || \u0022\u0022;
+  setUploadPreview(\u0022loc-upload-label\u0022, l.photoUrl || null);
+  if (locationId) $(\u0022loc-form-delete\u0022).classList.remove(\u0022hidden\u0022);
+  else $(\u0022loc-form-delete\u0022).classList.add(\u0022hidden\u0022);
+  openDrawer(\u0022drawer-location\u0022);
 }
 
 function handleLocationSave() {
-  var name = $("loc-form-name").value.trim();
-  if (!name) { toast("Name required", true); return; }
-  var btn = $("loc-form-save");
+  var name = $(\u0022loc-form-name\u0022).value.trim();
+  if (!name) { toast(\u0022Name required\u0022, true); return; }
+  var btn = $(\u0022loc-form-save\u0022);
   btn.disabled = true;
-  btn.innerHTML = '<span class="loader"></span> Saving...';
+  btn.innerHTML = '<span class=\u0022loader\u0022></span> Saving...';
 
   var pid = STATE.projectId;
-  var id = STATE.editingId || entityRef(pid, "locations").push().key;
+  var id = STATE.editingId || entityRef(pid, \u0022locations\u0022).push().key;
   var photoUrl = (STATE.locations[id] && STATE.locations[id].photoUrl) || null;
 
   var uploadPromise;
   if (STATE.pendingImage) {
-    var path = "users/" + uid() + "/data/" + pid + "/locations/" + id + ".jpg";
+    var path = \u0022users/\u0022 + uid() + \u0022/data/\u0022 + pid + \u0022/locations/\u0022 + id + \u0022.jpg\u0022;
     var ref = storage.ref(path);
     uploadPromise = ref.put(STATE.pendingImage).then(function () { return ref.getDownloadURL(); }).then(function (url) { photoUrl = url; });
   } else {
@@ -1914,59 +1914,59 @@ function handleLocationSave() {
   uploadPromise.then(function () {
     var payload = {
       name: name,
-      description: $("loc-form-description").value.trim(),
-      mood: $("loc-form-mood").value.trim(),
-      timeOfDay: $("loc-form-timeofday").value,
+      description: $(\u0022loc-form-description\u0022).value.trim(),
+      mood: $(\u0022loc-form-mood\u0022).value.trim(),
+      timeOfDay: $(\u0022loc-form-timeofday\u0022).value,
       photoUrl: photoUrl,
       updatedAt: Date.now()
     };
-    return entityRef(pid, "locations").child(id).update(payload).then(function () {
+    return entityRef(pid, \u0022locations\u0022).child(id).update(payload).then(function () {
       STATE.locations[id] = Object.assign({}, STATE.locations[id] || {}, payload);
       renderLocations();
       updateCounts();
       closeAllDrawers();
-      toast("Location saved.");
+      toast(\u0022Location saved.\u0022);
     });
   }).catch(function (e) {
-    toast("Save failed: " + e.message, true);
+    toast(\u0022Save failed: \u0022 + e.message, true);
   }).then(function () {
     btn.disabled = false;
-    btn.textContent = "Save Location";
+    btn.textContent = \u0022Save Location\u0022;
   });
 }
 
 function handleLocationDelete() {
-  if (!confirm("Delete this location?")) return;
+  if (!confirm(\u0022Delete this location?\u0022)) return;
   var id = STATE.editingId;
-  entityRef(STATE.projectId, "locations").child(id).remove().then(function () {
+  entityRef(STATE.projectId, \u0022locations\u0022).child(id).remove().then(function () {
     delete STATE.locations[id];
     renderLocations();
     updateCounts();
     closeAllDrawers();
-    toast("Location deleted.");
+    toast(\u0022Location deleted.\u0022);
   });
 }
 
 /* ============ SCENES ============ */
 
 function renderScenes() {
-  var list = $("scenes-list");
+  var list = $(\u0022scenes-list\u0022);
   var ids = Object.keys(STATE.scenes);
   var entries = ids.map(function (k) { return [k, STATE.scenes[k]]; });
   entries.sort(function (a, b) { return (a[1].order || 0) - (b[1].order || 0); });
 
   if (entries.length === 0) {
     list.innerHTML =
-      '<div class="empty-state">' +
+      '<div class=\u0022empty-state\u0022>' +
         '<h3>Write the screenplay.</h3>' +
         '<p>Each scene is one clip - 5 to 15 seconds. Describe what happens, who is there, how the camera moves, what they say.</p>' +
-        '<button class="btn primary" id="btn-first-scene">Add First Scene</button>' +
+        '<button class=\u0022btn primary\u0022 id=\u0022btn-first-scene\u0022>Add First Scene</button>' +
       '</div>';
-    $("btn-first-scene").onclick = function () { openSceneForm(); };
+    $(\u0022btn-first-scene\u0022).onclick = function () { openSceneForm(); };
     return;
   }
 
-  var html = "";
+  var html = \u0022\u0022;
   for (var i = 0; i < entries.length; i++) {
     var id = entries[i][0];
     var s = entries[i][1];
@@ -1978,28 +1978,28 @@ function renderScenes() {
         if (c) charNames.push(c.name);
       }
     }
-    var numStr = (i + 1 < 10 ? "0" : "") + (i + 1);
+    var numStr = (i + 1 < 10 ? \u00220\u0022 : \u0022\u0022) + (i + 1);
     var metaParts = [];
     if (loc) metaParts.push('<span>' + esc(loc) + '</span>');
-    if (charNames.length) metaParts.push('<span>' + esc(charNames.join(", ")) + '</span>');
+    if (charNames.length) metaParts.push('<span>' + esc(charNames.join(\u0022, \u0022)) + '</span>');
     if (s.camera) metaParts.push('<span>' + esc(s.camera) + '</span>');
 
     html +=
-      '<button class="scene-card" data-scene-id="' + id + '">' +
-        '<div class="scene-number">' + numStr + '<small>SCN</small></div>' +
-        '<div class="scene-body">' +
-          '<h4>' + esc(s.title || "Untitled scene") + '</h4>' +
-          '<div class="scene-meta">' + metaParts.join(" / ") + '</div>' +
-          '<div class="scene-action">' + esc(s.action || "") + '</div>' +
+      '<button class=\u0022scene-card\u0022 data-scene-id=\u0022' + id + '\u0022>' +
+        '<div class=\u0022scene-number\u0022>' + numStr + '<small>SCN</small></div>' +
+        '<div class=\u0022scene-body\u0022>' +
+          '<h4>' + esc(s.title || \u0022Untitled scene\u0022) + '</h4>' +
+          '<div class=\u0022scene-meta\u0022>' + metaParts.join(\u0022 / \u0022) + '</div>' +
+          '<div class=\u0022scene-action\u0022>' + esc(s.action || \u0022\u0022) + '</div>' +
         '</div>' +
-        '<div class="scene-duration">' + (s.duration || 8) + 's</div>' +
+        '<div class=\u0022scene-duration\u0022>' + (s.duration || 8) + 's</div>' +
       '</button>';
   }
   list.innerHTML = html;
-  var cards = list.querySelectorAll("[data-scene-id]");
+  var cards = list.querySelectorAll(\u0022[data-scene-id]\u0022);
   for (var j = 0; j < cards.length; j++) {
     (function (card) {
-      card.onclick = function () { openSceneForm(card.getAttribute("data-scene-id")); };
+      card.onclick = function () { openSceneForm(card.getAttribute(\u0022data-scene-id\u0022)); };
     })(cards[j]);
   }
 }
@@ -2010,46 +2010,46 @@ function openSceneForm(sceneId) {
   var ids = Object.keys(STATE.scenes);
   var scnNum = sceneId ? (ids.indexOf(sceneId) + 1) : (ids.length + 1);
 
-  $("drawer-scene-title").textContent = sceneId ? "Edit Scene" : "New Scene";
-  $("scene-form-number").textContent = "Scene " + (scnNum < 10 ? "0" : "") + scnNum;
-  $("scene-form-title").value = s.title || "";
-  $("scene-form-duration").value = s.duration || 8;
-  $("scene-form-camera").value = s.camera || "";
-  $("scene-form-action").value = s.action || "";
-  $("scene-form-reactions").value = s.reactions || "";
-  $("scene-form-ambient").value = s.ambient || "";
+  $(\u0022drawer-scene-title\u0022).textContent = sceneId ? \u0022Edit Scene\u0022 : \u0022New Scene\u0022;
+  $(\u0022scene-form-number\u0022).textContent = \u0022Scene \u0022 + (scnNum < 10 ? \u00220\u0022 : \u0022\u0022) + scnNum;
+  $(\u0022scene-form-title\u0022).value = s.title || \u0022\u0022;
+  $(\u0022scene-form-duration\u0022).value = s.duration || 8;
+  $(\u0022scene-form-camera\u0022).value = s.camera || \u0022\u0022;
+  $(\u0022scene-form-action\u0022).value = s.action || \u0022\u0022;
+  $(\u0022scene-form-reactions\u0022).value = s.reactions || \u0022\u0022;
+  $(\u0022scene-form-ambient\u0022).value = s.ambient || \u0022\u0022;
 
   // Location dropdown
-  var locOptions = '<option value="">- Select -</option>';
+  var locOptions = '<option value=\u0022\u0022>- Select -</option>';
   var locIds = Object.keys(STATE.locations);
   for (var i = 0; i < locIds.length; i++) {
     var lid = locIds[i];
-    var selected = s.locationId === lid ? " selected" : "";
-    locOptions += '<option value="' + lid + '"' + selected + ">" + esc(STATE.locations[lid].name) + "</option>";
+    var selected = s.locationId === lid ? \u0022 selected\u0022 : \u0022\u0022;
+    locOptions += '<option value=\u0022' + lid + '\u0022' + selected + \u0022>\u0022 + esc(STATE.locations[lid].name) + \u0022</option>\u0022;
   }
-  $("scene-form-location").innerHTML = locOptions;
+  $(\u0022scene-form-location\u0022).innerHTML = locOptions;
 
   // Character chips
-  var chipBox = $("scene-form-characters");
+  var chipBox = $(\u0022scene-form-characters\u0022);
   var selectedChars = {};
   if (s.characterIds) {
     for (var j = 0; j < s.characterIds.length; j++) selectedChars[s.characterIds[j]] = true;
   }
   var charIds = Object.keys(STATE.characters);
   if (charIds.length === 0) {
-    chipBox.innerHTML = '<span class="chip empty-hint">No characters yet - add some first</span>';
+    chipBox.innerHTML = '<span class=\u0022chip empty-hint\u0022>No characters yet - add some first</span>';
   } else {
-    var chipHtml = "";
+    var chipHtml = \u0022\u0022;
     for (var m = 0; m < charIds.length; m++) {
       var cid = charIds[m];
-      var cls = selectedChars[cid] ? "chip active" : "chip";
-      chipHtml += '<span class="' + cls + '" data-char-id="' + cid + '">' + esc(STATE.characters[cid].name) + "</span>";
+      var cls = selectedChars[cid] ? \u0022chip active\u0022 : \u0022chip\u0022;
+      chipHtml += '<span class=\u0022' + cls + '\u0022 data-char-id=\u0022' + cid + '\u0022>' + esc(STATE.characters[cid].name) + \u0022</span>\u0022;
     }
     chipBox.innerHTML = chipHtml;
-    var chips = chipBox.querySelectorAll(".chip");
+    var chips = chipBox.querySelectorAll(\u0022.chip\u0022);
     for (var n = 0; n < chips.length; n++) {
       (function (chip) {
-        chip.onclick = function () { chip.classList.toggle("active"); };
+        chip.onclick = function () { chip.classList.toggle(\u0022active\u0022); };
       })(chips[n]);
     }
   }
@@ -2057,37 +2057,37 @@ function openSceneForm(sceneId) {
   STATE.dialogueRows = s.dialogue ? s.dialogue.slice() : [];
   renderDialogueRows();
 
-  if (sceneId) $("scene-form-delete").classList.remove("hidden");
-  else $("scene-form-delete").classList.add("hidden");
-  openDrawer("drawer-scene");
+  if (sceneId) $(\u0022scene-form-delete\u0022).classList.remove(\u0022hidden\u0022);
+  else $(\u0022scene-form-delete\u0022).classList.add(\u0022hidden\u0022);
+  openDrawer(\u0022drawer-scene\u0022);
 }
 
 function addDialogueRow() {
-  STATE.dialogueRows.push({ characterId: "", line: "" });
+  STATE.dialogueRows.push({ characterId: \u0022\u0022, line: \u0022\u0022 });
   renderDialogueRows();
 }
 
 function renderDialogueRows() {
-  var box = $("scene-form-dialogue");
+  var box = $(\u0022scene-form-dialogue\u0022);
   if (STATE.dialogueRows.length === 0) {
-    box.innerHTML = '<div style="color:var(--ink-faint);font-size:11px;font-style:italic;padding:8px 0;">No dialogue. Tap + Line to add.</div>';
+    box.innerHTML = '<div style=\u0022color:var(--ink-faint);font-size:11px;font-style:italic;padding:8px 0;\u0022>No dialogue. Tap + Line to add.</div>';
     return;
   }
   var charIds = Object.keys(STATE.characters);
-  var html = "";
+  var html = \u0022\u0022;
   for (var i = 0; i < STATE.dialogueRows.length; i++) {
     var d = STATE.dialogueRows[i];
-    var options = '<option value="">- Speaker -</option>';
+    var options = '<option value=\u0022\u0022>- Speaker -</option>';
     for (var j = 0; j < charIds.length; j++) {
       var cid = charIds[j];
-      var selected = d.characterId === cid ? " selected" : "";
-      options += '<option value="' + cid + '"' + selected + ">" + esc(STATE.characters[cid].name) + "</option>";
+      var selected = d.characterId === cid ? \u0022 selected\u0022 : \u0022\u0022;
+      options += '<option value=\u0022' + cid + '\u0022' + selected + \u0022>\u0022 + esc(STATE.characters[cid].name) + \u0022</option>\u0022;
     }
     html +=
-      '<div class="dialogue-row">' +
-        '<button type="button" class="remove-dialogue" data-i="' + i + '">&times;</button>' +
-        '<select data-i="' + i + '" class="dialogue-char">' + options + '</select>' +
-        '<textarea data-i="' + i + '" class="dialogue-line" placeholder="What do they say?">' + esc(d.line || "") + '</textarea>' +
+      '<div class=\u0022dialogue-row\u0022>' +
+        '<button type=\u0022button\u0022 class=\u0022remove-dialogue\u0022 data-i=\u0022' + i + '\u0022>&times;</button>' +
+        '<select data-i=\u0022' + i + '\u0022 class=\u0022dialogue-char\u0022>' + options + '</select>' +
+        '<textarea data-i=\u0022' + i + '\u0022 class=\u0022dialogue-line\u0022 placeholder=\u0022What do they say?\u0022>' + esc(d.line || \u0022\u0022) + '</textarea>' +
 
 ```
   '</div>';
@@ -2096,30 +2096,30 @@ function renderDialogueRows() {
 }
 box.innerHTML = html;
 
-var removeBtns = box.querySelectorAll(”.remove-dialogue”);
+var removeBtns = box.querySelectorAll(\u0022.remove-dialogue\u0022);
 for (var k = 0; k < removeBtns.length; k++) {
 (function (btn) {
 btn.onclick = function () {
-var idx = parseInt(btn.getAttribute(“data-i”), 10);
+var idx = parseInt(btn.getAttribute(\u0022data-i\u0022), 10);
 STATE.dialogueRows.splice(idx, 1);
 renderDialogueRows();
 };
 })(removeBtns[k]);
 }
-var selects = box.querySelectorAll(”.dialogue-char”);
+var selects = box.querySelectorAll(\u0022.dialogue-char\u0022);
 for (var m = 0; m < selects.length; m++) {
 (function (sel) {
 sel.onchange = function () {
-var idx = parseInt(sel.getAttribute(“data-i”), 10);
+var idx = parseInt(sel.getAttribute(\u0022data-i\u0022), 10);
 STATE.dialogueRows[idx].characterId = sel.value;
 };
 })(selects[m]);
 }
-var textareas = box.querySelectorAll(”.dialogue-line”);
+var textareas = box.querySelectorAll(\u0022.dialogue-line\u0022);
 for (var n = 0; n < textareas.length; n++) {
 (function (ta) {
 ta.oninput = function () {
-var idx = parseInt(ta.getAttribute(“data-i”), 10);
+var idx = parseInt(ta.getAttribute(\u0022data-i\u0022), 10);
 STATE.dialogueRows[idx].line = ta.value;
 };
 })(textareas[n]);
@@ -2127,14 +2127,14 @@ STATE.dialogueRows[idx].line = ta.value;
 }
 
 function handleSceneSave() {
-var title = $(“scene-form-title”).value.trim();
-var action = $(“scene-form-action”).value.trim();
-if (!title) { toast(“Scene title required”, true); return; }
-if (!action) { toast(“Action description required”, true); return; }
+var title = $(\u0022scene-form-title\u0022).value.trim();
+var action = $(\u0022scene-form-action\u0022).value.trim();
+if (!title) { toast(\u0022Scene title required\u0022, true); return; }
+if (!action) { toast(\u0022Action description required\u0022, true); return; }
 
-var chipEls = document.querySelectorAll(”#scene-form-characters .chip.active”);
+var chipEls = document.querySelectorAll(\u0022#scene-form-characters .chip.active\u0022);
 var selectedCharIds = [];
-for (var i = 0; i < chipEls.length; i++) selectedCharIds.push(chipEls[i].getAttribute(“data-char-id”));
+for (var i = 0; i < chipEls.length; i++) selectedCharIds.push(chipEls[i].getAttribute(\u0022data-char-id\u0022));
 
 var cleanDialogue = [];
 for (var j = 0; j < STATE.dialogueRows.length; j++) {
@@ -2144,12 +2144,12 @@ cleanDialogue.push({ characterId: d.characterId || null, line: d.line.trim() });
 }
 }
 
-var btn = $(“scene-form-save”);
+var btn = $(\u0022scene-form-save\u0022);
 btn.disabled = true;
-btn.innerHTML = ‘<span class="loader"></span> Saving…’;
+btn.innerHTML = ‘<span class=\u0022loader\u0022></span> Saving…’;
 
 var pid = STATE.projectId;
-var id = STATE.editingId || entityRef(pid, “scenes”).push().key;
+var id = STATE.editingId || entityRef(pid, \u0022scenes\u0022).push().key;
 var existingOrder = STATE.scenes[id] && STATE.scenes[id].order;
 var maxOrder = 0;
 var keys = Object.keys(STATE.scenes);
@@ -2160,41 +2160,41 @@ if (o > maxOrder) maxOrder = o;
 
 var payload = {
 title: title,
-duration: parseInt($(“scene-form-duration”).value, 10) || 8,
-locationId: $(“scene-form-location”).value || null,
+duration: parseInt($(\u0022scene-form-duration\u0022).value, 10) || 8,
+locationId: $(\u0022scene-form-location\u0022).value || null,
 characterIds: selectedCharIds,
-camera: $(“scene-form-camera”).value.trim(),
+camera: $(\u0022scene-form-camera\u0022).value.trim(),
 action: action,
-reactions: $(“scene-form-reactions”).value.trim(),
-ambient: $(“scene-form-ambient”).value.trim(),
+reactions: $(\u0022scene-form-reactions\u0022).value.trim(),
+ambient: $(\u0022scene-form-ambient\u0022).value.trim(),
 dialogue: cleanDialogue,
 order: existingOrder != null ? existingOrder : maxOrder + 1,
 updatedAt: Date.now()
 };
 
-entityRef(pid, “scenes”).child(id).update(payload).then(function () {
+entityRef(pid, \u0022scenes\u0022).child(id).update(payload).then(function () {
 STATE.scenes[id] = Object.assign({}, STATE.scenes[id] || {}, payload);
 renderScenes();
 updateCounts();
 closeAllDrawers();
-toast(“Scene saved.”);
+toast(\u0022Scene saved.\u0022);
 }).catch(function (e) {
-toast(“Save failed: “ + e.message, true);
+toast(\u0022Save failed: \u0022 + e.message, true);
 }).then(function () {
 btn.disabled = false;
-btn.textContent = “Save Scene”;
+btn.textContent = \u0022Save Scene\u0022;
 });
 }
 
 function handleSceneDelete() {
-if (!confirm(“Delete this scene?”)) return;
+if (!confirm(\u0022Delete this scene?\u0022)) return;
 var id = STATE.editingId;
-entityRef(STATE.projectId, “scenes”).child(id).remove().then(function () {
+entityRef(STATE.projectId, \u0022scenes\u0022).child(id).remove().then(function () {
 delete STATE.scenes[id];
 renderScenes();
 updateCounts();
 closeAllDrawers();
-toast(“Scene deleted.”);
+toast(\u0022Scene deleted.\u0022);
 });
 }
 
@@ -2215,59 +2215,59 @@ reader.readAsDataURL(f);
 
 function wireUp() {
 // Setup screen
-var btnSaveConfig = $(“btn-save-config”);
+var btnSaveConfig = $(\u0022btn-save-config\u0022);
 if (btnSaveConfig) btnSaveConfig.onclick = handleSaveConfig;
 
 // Auth
-var btnSignin = $(“btn-signin”);
+var btnSignin = $(\u0022btn-signin\u0022);
 if (btnSignin) btnSignin.onclick = handleSignIn;
 
-var btnSignout = $(“btn-signout”);
+var btnSignout = $(\u0022btn-signout\u0022);
 if (btnSignout) btnSignout.onclick = function () { auth.signOut(); };
 
 // Tabs
-var tabs = document.querySelectorAll(”.tab-btn”);
+var tabs = document.querySelectorAll(\u0022.tab-btn\u0022);
 for (var i = 0; i < tabs.length; i++) {
 (function (btn) {
-btn.onclick = function () { switchTab(btn.getAttribute(“data-tab”)); };
+btn.onclick = function () { switchTab(btn.getAttribute(\u0022data-tab\u0022)); };
 })(tabs[i]);
 }
 
 // Add buttons
-var addChar = $(“btn-add-character”);
+var addChar = $(\u0022btn-add-character\u0022);
 if (addChar) addChar.onclick = function () { openCharacterForm(); };
-var addLoc = $(“btn-add-location”);
+var addLoc = $(\u0022btn-add-location\u0022);
 if (addLoc) addLoc.onclick = function () { openLocationForm(); };
-var addScene = $(“btn-add-scene”);
+var addScene = $(\u0022btn-add-scene\u0022);
 if (addScene) addScene.onclick = function () { openSceneForm(); };
-var addDialogue = $(“btn-add-dialogue”);
+var addDialogue = $(\u0022btn-add-dialogue\u0022);
 if (addDialogue) addDialogue.onclick = addDialogueRow;
 
 // Save buttons
-$(“project-form-save”).onclick = handleProjectSave;
-$(“char-form-save”).onclick = handleCharacterSave;
-$(“char-form-delete”).onclick = handleCharacterDelete;
-$(“loc-form-save”).onclick = handleLocationSave;
-$(“loc-form-delete”).onclick = handleLocationDelete;
-$(“scene-form-save”).onclick = handleSceneSave;
-$(“scene-form-delete”).onclick = handleSceneDelete;
+$(\u0022project-form-save\u0022).onclick = handleProjectSave;
+$(\u0022char-form-save\u0022).onclick = handleCharacterSave;
+$(\u0022char-form-delete\u0022).onclick = handleCharacterDelete;
+$(\u0022loc-form-save\u0022).onclick = handleLocationSave;
+$(\u0022loc-form-delete\u0022).onclick = handleLocationDelete;
+$(\u0022scene-form-save\u0022).onclick = handleSceneSave;
+$(\u0022scene-form-delete\u0022).onclick = handleSceneDelete;
 
 // Delete project
-var delProj = $(“btn-delete-project”);
+var delProj = $(\u0022btn-delete-project\u0022);
 if (delProj) delProj.onclick = deleteCurrentProject;
 
 // Photo uploads
-$(“char-form-photo”).onchange = handlePhotoChange(“char-upload-label”);
-$(“loc-form-photo”).onchange = handlePhotoChange(“loc-upload-label”);
+$(\u0022char-form-photo\u0022).onchange = handlePhotoChange(\u0022char-upload-label\u0022);
+$(\u0022loc-form-photo\u0022).onchange = handlePhotoChange(\u0022loc-upload-label\u0022);
 
 // Close buttons
-var closes = document.querySelectorAll(”[data-close]”);
+var closes = document.querySelectorAll(\u0022[data-close]\u0022);
 for (var j = 0; j < closes.length; j++) closes[j].onclick = closeAllDrawers;
-$(“modal-backdrop”).onclick = closeAllDrawers;
+$(\u0022modal-backdrop\u0022).onclick = closeAllDrawers;
 
 // Keyboard
-document.addEventListener(“keydown”, function (e) {
-if (e.key === “Escape”) closeAllDrawers();
+document.addEventListener(\u0022keydown\u0022, function (e) {
+if (e.key === \u0022Escape\u0022) closeAllDrawers();
 });
 }
 
