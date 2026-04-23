@@ -1416,6 +1416,12 @@ main { padding: 16px 12px 80px; }
     </div>
 
     <div class="tab-content hidden" id="tab-settings">
+      <div class="entity-card static" style="margin-bottom:16px;">
+        <h4 style="color:#ede9e0;">Export for Generator</h4>
+        <p class="muted small">Export this project as JSON to paste into the Colab notebook. Copies to clipboard and also shows the text for manual copy.</p>
+        <button class="btn primary" id="btn-export-json">Copy as JSON</button>
+        <textarea id="export-output" class="hidden" readonly style="margin-top:16px;width:100%;min-height:240px;background:#1c1c24;border:1px solid #3a3a52;color:#ede9e0;padding:12px;font-family:'Inter',monospace;font-size:11px;line-height:1.5;"></textarea>
+      </div>
       <div class="entity-card static">
         <h4 style="color:#ede9e0;">Danger Zone</h4>
         <p class="muted small">Deleting this project removes all characters, locations, and scenes. This cannot be undone.</p>
@@ -1938,6 +1944,108 @@ function openProject(projectId) {
     switchTab('characters');
     loadEntities();
   });
+}
+
+function exportProjectAsJson() {
+  if (!STATE.project) { toast('Open a project first', true); return; }
+
+  var charMap = {}, charIdToKey = {}, usedKeys = {};
+  var cIds = Object.keys(STATE.characters);
+  for (var i = 0; i < cIds.length; i++) {
+    var cid = cIds[i], c = STATE.characters[cid];
+    var base = (c.name || 'character').toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/^_+|_+$/g, '') || 'character';
+    var key = base, n = 2;
+    while (usedKeys[key]) { key = base + '_' + n; n++; }
+    usedKeys[key] = true;
+    charIdToKey[cid] = key;
+    charMap[key] = {
+      name: c.name || '',
+      appearance: c.appearance || '',
+      personality: c.personality || '',
+      voice: c.voice || '',
+      photoUrl: c.photoUrl || null
+    };
+  }
+
+  var locMap = {}, locIdToKey = {}, usedLocKeys = {};
+  var lIds = Object.keys(STATE.locations);
+  for (var j = 0; j < lIds.length; j++) {
+    var lid = lIds[j], l = STATE.locations[lid];
+    var lbase = (l.name || 'location').toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/^_+|_+$/g, '') || 'location';
+    var lkey = lbase, ln = 2;
+    while (usedLocKeys[lkey]) { lkey = lbase + '_' + ln; ln++; }
+    usedLocKeys[lkey] = true;
+    locIdToKey[lid] = lkey;
+    locMap[lkey] = {
+      name: l.name || '',
+      description: l.description || '',
+      mood: l.mood || '',
+      timeOfDay: l.timeOfDay || '',
+      photoUrl: l.photoUrl || null
+    };
+  }
+
+  var sceneEntries = Object.keys(STATE.scenes).map(function (k) { return [k, STATE.scenes[k]]; });
+  sceneEntries.sort(function (a, b) { return (a[1].order || 0) - (b[1].order || 0); });
+
+  var scenesOut = [];
+  for (var k = 0; k < sceneEntries.length; k++) {
+    var s = sceneEntries[k][1];
+    var sceneChars = [];
+    if (s.characterIds) {
+      for (var m = 0; m < s.characterIds.length; m++) {
+        var mk = charIdToKey[s.characterIds[m]];
+        if (mk) sceneChars.push(mk);
+      }
+    }
+    var sceneDlg = [];
+    if (s.dialogue) {
+      for (var n2 = 0; n2 < s.dialogue.length; n2++) {
+        var d = s.dialogue[n2];
+        sceneDlg.push({
+          characterId: d.characterId ? (charIdToKey[d.characterId] || null) : null,
+          line: d.line || ''
+        });
+      }
+    }
+    scenesOut.push({
+      title: s.title || '',
+      duration: s.duration || 8,
+      location: s.locationId ? (locIdToKey[s.locationId] || null) : null,
+      characters: sceneChars,
+      camera: s.camera || '',
+      action: s.action || '',
+      reactions: s.reactions || '',
+      ambient: s.ambient || '',
+      dialogue: sceneDlg
+    });
+  }
+
+  var exportObj = {
+    title: STATE.project.title || '',
+    logline: STATE.project.logline || '',
+    genre: STATE.project.genre || '',
+    characters: charMap,
+    locations: locMap,
+    scenes: scenesOut
+  };
+
+  var jsonStr = JSON.stringify(exportObj, null, 2);
+  var ta = $('export-output');
+  ta.classList.remove('hidden');
+  ta.value = jsonStr;
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(jsonStr).then(function () {
+      toast('Copied to clipboard. Also shown below.');
+    }).catch(function () {
+      ta.focus(); ta.select();
+      toast('Shown below. Long-press to copy.');
+    });
+  } else {
+    ta.focus(); ta.select();
+    toast('Shown below. Long-press to copy.');
+  }
 }
 
 function deleteCurrentProject() {
@@ -2522,6 +2630,8 @@ $('scene-form-delete').onclick = handleSceneDelete;
 // Delete project
 var delProj = $('btn-delete-project');
 if (delProj) delProj.onclick = deleteCurrentProject;
+var btnExport = $('btn-export-json');
+if (btnExport) btnExport.onclick = exportProjectAsJson;
 
 // Photo uploads
 $('char-form-photo').onchange = handlePhotoChange('char-upload-label');
