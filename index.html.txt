@@ -1,0 +1,2281 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0a0a0a">
+<title>Reel - Movie Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=IBM+Plex+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0a;
+  --bg-2: #121212;
+  --bg-3: #1a1a1a;
+  --ink: #f5f1ea;
+  --ink-dim: #8a847c;
+  --ink-faint: #4a4742;
+  --accent: #d4a574;
+  --accent-hot: #e8b87f;
+  --red: #c94a3b;
+  --line: rgba(245, 241, 234, 0.08);
+  --line-strong: rgba(245, 241, 234, 0.15);
+}
+
+- { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+background: var(–bg);
+color: var(–ink);
+font-family: ‘IBM Plex Mono’, ui-monospace, monospace;
+font-size: 14px;
+line-height: 1.55;
+min-height: 100vh;
+overflow-x: hidden;
+-webkit-font-smoothing: antialiased;
+}
+
+body::before {
+content: ‘’;
+position: fixed; inset: 0;
+pointer-events: none;
+z-index: 1000;
+opacity: 0.04;
+background-image: url(“data:image/svg+xml,%3Csvg viewBox=‘0 0 200 200’ xmlns=‘http://www.w3.org/2000/svg’%3E%3Cfilter id=‘n’%3E%3CfeTurbulence type=‘fractalNoise’ baseFrequency=‘0.9’ numOctaves=‘3’ /%3E%3C/filter%3E%3Crect width=‘100%25’ height=‘100%25’ filter=‘url(%23n)’ /%3E%3C/svg%3E”);
+mix-blend-mode: overlay;
+}
+
+h1, h2, h3, h4, .display {
+font-family: ‘Fraunces’, serif;
+font-variation-settings: “opsz” 144;
+font-weight: 400;
+letter-spacing: -0.02em;
+line-height: 1.1;
+}
+
+.display em { font-style: normal; color: var(–accent); }
+
+.mono-label {
+font-size: 10px;
+letter-spacing: 0.18em;
+text-transform: uppercase;
+color: var(–ink-dim);
+font-weight: 500;
+}
+.mono-label.accent { color: var(–accent); }
+.center { text-align: center; }
+.muted { color: var(–ink-dim); }
+.small { font-size: 12px; }
+
+.hidden { display: none !important; }
+
+.row { display: flex; align-items: center; gap: 10px; }
+.spread { justify-content: space-between; }
+.gap-12 { gap: 12px; }
+.gap-16 { gap: 16px; }
+.flex1 { flex: 1; }
+.ml-auto { margin-left: auto; }
+.mb-10 { margin-bottom: 10px; }
+.mb-20 { margin-bottom: 20px; }
+
+/* Loading screen */
+#loading-screen {
+position: fixed; inset: 0;
+background: var(–bg);
+color: var(–accent);
+display: grid; place-items: center;
+z-index: 500;
+}
+.loading-inner { text-align: center; }
+.spinner {
+width: 24px; height: 24px;
+border: 2px solid var(–ink-faint);
+border-top-color: var(–accent);
+border-radius: 50%;
+animation: spin 0.8s linear infinite;
+margin: 0 auto 16px;
+}
+.loading-text {
+font-size: 11px;
+letter-spacing: 0.3em;
+text-transform: uppercase;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Fatal error */
+#fatal-error {
+position: fixed; inset: 0;
+background: #1a0808;
+color: #ffb3b3;
+z-index: 9999;
+padding: 32px;
+font-size: 13px;
+overflow: auto;
+line-height: 1.6;
+}
+#fatal-error h2 {
+color: #ff6b6b;
+font-size: 28px;
+margin-bottom: 16px;
+}
+#fatal-error pre {
+background: #000;
+padding: 16px;
+border: 1px solid #333;
+white-space: pre-wrap;
+word-break: break-word;
+margin: 12px 0;
+}
+#fatal-error .hint { color: #888; margin-top: 20px; }
+
+/* Brand mark */
+.brand-mark {
+width: 30px; height: 30px;
+border: 1px solid var(–accent);
+display: grid; place-items: center;
+position: relative;
+}
+.brand-mark.center { margin: 0 auto 32px; }
+.brand-mark::before, .brand-mark::after {
+content: ‘’; position: absolute;
+width: 4px; height: 4px; background: var(–accent);
+}
+.brand-mark::before { top: 3px; left: 3px; }
+.brand-mark::after { bottom: 3px; right: 3px; }
+.brand-mark span {
+font-family: ‘Fraunces’, serif;
+font-weight: 500;
+font-size: 16px;
+color: var(–accent);
+}
+
+/* Top bar */
+.topbar {
+display: flex;
+align-items: center;
+justify-content: space-between;
+padding: 18px 24px;
+border-bottom: 1px solid var(–line);
+position: sticky; top: 0; z-index: 50;
+background: var(–bg);
+backdrop-filter: blur(12px);
+}
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand-name {
+font-family: ‘Fraunces’, serif;
+font-size: 20px;
+}
+.brand-sub {
+color: var(–ink-dim);
+font-size: 10px;
+letter-spacing: 0.2em;
+text-transform: uppercase;
+margin-top: 2px;
+}
+
+.crumb {
+display: flex; align-items: center; gap: 10px;
+font-size: 11px;
+letter-spacing: 0.08em;
+text-transform: uppercase;
+color: var(–ink-dim);
+flex: 1;
+margin: 0 24px;
+overflow: hidden;
+text-overflow: ellipsis;
+white-space: nowrap;
+}
+.crumb .sep { color: var(–ink-faint); }
+.crumb button {
+background: none; border: none; color: var(–ink-dim);
+font: inherit; cursor: pointer;
+letter-spacing: inherit; text-transform: inherit;
+padding: 0;
+}
+.crumb button:hover { color: var(–accent); }
+.crumb .current { color: var(–ink); }
+
+.auth-chip {
+display: flex; align-items: center; gap: 8px;
+font-size: 11px;
+color: var(–ink-dim);
+}
+.auth-chip .dot {
+width: 6px; height: 6px; border-radius: 50%;
+background: var(–ink-faint);
+}
+.auth-chip.live .dot {
+background: var(–accent);
+box-shadow: 0 0 8px var(–accent);
+}
+
+/* Main */
+main {
+padding: 32px 24px 100px;
+max-width: 1200px;
+margin: 0 auto;
+}
+
+/* Hero */
+.hero {
+padding: 60px 0 48px;
+border-bottom: 1px solid var(–line);
+margin-bottom: 40px;
+display: flex;
+flex-direction: column;
+gap: 20px;
+}
+.hero h1 {
+font-size: clamp(44px, 7vw, 84px);
+font-weight: 300;
+font-style: italic;
+}
+.hero p {
+max-width: 520px;
+font-size: 13px;
+line-height: 1.7;
+}
+
+.section-head {
+display: flex;
+align-items: baseline;
+justify-content: space-between;
+margin-bottom: 24px;
+padding-bottom: 12px;
+border-bottom: 1px solid var(–line);
+}
+.section-head h2 { font-size: 24px; }
+.count {
+font-size: 11px; color: var(–ink-dim);
+letter-spacing: 0.15em; text-transform: uppercase;
+}
+
+/* Grid */
+.grid {
+display: grid;
+grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+gap: 20px;
+}
+
+/* Project card */
+.project-card {
+background: var(–bg-2);
+border: 1px solid var(–line);
+padding: 24px 22px;
+cursor: pointer;
+transition: all 0.25s ease;
+position: relative;
+overflow: hidden;
+text-align: left;
+color: inherit;
+font: inherit;
+display: flex;
+flex-direction: column;
+gap: 14px;
+min-height: 180px;
+}
+.project-card:hover {
+background: var(–bg-3);
+border-color: var(–line-strong);
+transform: translateY(-2px);
+}
+.project-card::before {
+content: ‘’; position: absolute;
+top: 0; left: 0; width: 3px; height: 0;
+background: var(–accent);
+transition: height 0.3s ease;
+}
+.project-card:hover::before { height: 100%; }
+.project-card h3 {
+font-size: 22px;
+line-height: 1.15;
+}
+.project-card .tag {
+font-size: 10px;
+color: var(–accent);
+letter-spacing: 0.2em;
+text-transform: uppercase;
+}
+.project-card .logline {
+color: var(–ink-dim);
+font-size: 12px;
+flex: 1;
+display: -webkit-box;
+-webkit-line-clamp: 3;
+-webkit-box-orient: vertical;
+overflow: hidden;
+}
+.project-card .stats {
+display: flex; gap: 16px;
+margin-top: auto;
+padding-top: 12px;
+border-top: 1px dashed var(–line);
+font-size: 10px;
+color: var(–ink-dim);
+letter-spacing: 0.1em;
+text-transform: uppercase;
+}
+.project-card .stats span strong {
+color: var(–ink);
+font-weight: 500;
+font-family: ‘Fraunces’, serif;
+font-size: 16px;
+margin-right: 4px;
+}
+
+.new-project-card {
+background: transparent;
+border: 1px dashed var(–line-strong);
+display: grid;
+place-items: center;
+cursor: pointer;
+color: var(–ink-dim);
+transition: all 0.2s ease;
+min-height: 180px;
+font-family: inherit;
+font-size: inherit;
+}
+.new-project-card:hover {
+border-color: var(–accent);
+color: var(–accent);
+background: rgba(212, 165, 116, 0.03);
+}
+.new-project-card .plus-big {
+font-size: 48px;
+font-family: ‘Fraunces’, serif;
+font-weight: 200;
+line-height: 1;
+margin-bottom: 8px;
+}
+.new-project-card span {
+font-size: 11px;
+letter-spacing: 0.2em;
+text-transform: uppercase;
+}
+
+/* Project header */
+.project-header {
+padding: 20px 0 32px;
+border-bottom: 1px solid var(–line);
+margin-bottom: 32px;
+}
+.project-header h1 {
+font-size: clamp(36px, 6vw, 64px);
+font-weight: 300;
+font-style: italic;
+margin: 12px 0 8px;
+}
+.project-header .meta {
+color: var(–ink-dim);
+font-size: 11px;
+letter-spacing: 0.1em;
+text-transform: uppercase;
+display: flex;
+gap: 24px;
+flex-wrap: wrap;
+}
+
+/* Tabs */
+.tabs {
+display: flex;
+gap: 0;
+border-bottom: 1px solid var(–line);
+margin-bottom: 32px;
+overflow-x: auto;
+-webkit-overflow-scrolling: touch;
+}
+.tab-btn {
+background: none;
+border: none;
+color: var(–ink-dim);
+font: inherit;
+padding: 14px 20px;
+cursor: pointer;
+font-size: 11px;
+letter-spacing: 0.2em;
+text-transform: uppercase;
+position: relative;
+white-space: nowrap;
+}
+.tab-btn:hover { color: var(–ink); }
+.tab-btn.active { color: var(–accent); }
+.tab-btn.active::after {
+content: ‘’;
+position: absolute;
+bottom: -1px; left: 20px; right: 20px;
+height: 1px;
+background: var(–accent);
+}
+.tab-btn .badge {
+display: inline-block;
+margin-left: 8px;
+background: var(–bg-3);
+color: var(–ink-dim);
+padding: 2px 8px;
+border-radius: 10px;
+font-size: 10px;
+}
+.tab-btn.active .badge {
+background: var(–accent);
+color: var(–bg);
+}
+
+/* Entity card */
+.entity-card {
+background: var(–bg-2);
+border: 1px solid var(–line);
+padding: 20px;
+display: flex;
+gap: 18px;
+cursor: pointer;
+transition: all 0.2s;
+text-align: left;
+font: inherit;
+color: inherit;
+width: 100%;
+margin-bottom: 12px;
+}
+.entity-card:hover {
+background: var(–bg-3);
+border-color: var(–line-strong);
+}
+.entity-card.static {
+cursor: default;
+flex-direction: column;
+align-items: flex-start;
+gap: 10px;
+}
+.entity-card.static:hover {
+background: var(–bg-2);
+border-color: var(–line);
+}
+.entity-card .thumb {
+width: 80px; height: 80px;
+flex-shrink: 0;
+background: var(–bg-3);
+border: 1px solid var(–line);
+background-size: cover;
+background-position: center;
+position: relative;
+}
+.entity-card .thumb.empty::after {
+content: ‘NO REF’;
+position: absolute;
+inset: 0;
+display: grid;
+place-items: center;
+font-size: 9px;
+letter-spacing: 0.2em;
+color: var(–ink-faint);
+}
+.entity-card .body { flex: 1; min-width: 0; }
+.entity-card h4 {
+font-size: 18px;
+margin-bottom: 4px;
+}
+.entity-card .desc {
+color: var(–ink-dim);
+font-size: 12px;
+line-height: 1.5;
+display: -webkit-box;
+-webkit-line-clamp: 2;
+-webkit-box-orient: vertical;
+overflow: hidden;
+}
+
+/* Scene card */
+.scene-card {
+background: var(–bg-2);
+border: 1px solid var(–line);
+padding: 22px 24px;
+cursor: pointer;
+transition: all 0.2s;
+display: grid;
+grid-template-columns: auto 1fr auto;
+gap: 20px;
+align-items: start;
+text-align: left;
+font: inherit;
+color: inherit;
+width: 100%;
+margin-bottom: 12px;
+}
+.scene-card:hover {
+background: var(–bg-3);
+border-color: var(–line-strong);
+}
+.scene-number {
+font-family: ‘Fraunces’, serif;
+font-size: 40px;
+font-weight: 300;
+color: var(–accent);
+line-height: 0.9;
+min-width: 60px;
+}
+.scene-number small {
+display: block;
+font-size: 9px;
+letter-spacing: 0.2em;
+color: var(–ink-faint);
+font-family: ‘IBM Plex Mono’, monospace;
+margin-top: 4px;
+}
+.scene-body h4 {
+font-size: 16px;
+margin-bottom: 8px;
+}
+.scene-body .scene-meta {
+display: flex;
+gap: 14px;
+flex-wrap: wrap;
+font-size: 10px;
+letter-spacing: 0.1em;
+text-transform: uppercase;
+color: var(–ink-dim);
+margin-bottom: 10px;
+}
+.scene-body .scene-meta span {
+position: relative;
+}
+.scene-body .scene-action {
+color: var(–ink-dim);
+font-size: 12px;
+line-height: 1.5;
+display: -webkit-box;
+-webkit-line-clamp: 2;
+-webkit-box-orient: vertical;
+overflow: hidden;
+}
+.scene-duration {
+font-family: ‘Fraunces’, serif;
+font-size: 20px;
+color: var(–ink-dim);
+font-style: italic;
+}
+
+/* Empty state */
+.empty-state {
+text-align: center;
+padding: 80px 20px;
+color: var(–ink-dim);
+}
+.empty-state h3 {
+font-size: 32px;
+font-weight: 300;
+font-style: italic;
+margin-bottom: 8px;
+color: var(–ink);
+}
+.empty-state p {
+font-size: 13px;
+margin: 0 auto 24px;
+max-width: 400px;
+}
+
+/* Buttons */
+.btn {
+background: var(–ink);
+color: var(–bg);
+border: none;
+padding: 12px 22px;
+font: inherit;
+font-size: 11px;
+letter-spacing: 0.2em;
+text-transform: uppercase;
+cursor: pointer;
+font-weight: 500;
+transition: all 0.2s;
+display: inline-flex;
+align-items: center;
+gap: 10px;
+}
+.btn:hover { background: var(–accent); }
+.btn.primary { background: var(–accent); color: var(–bg); }
+.btn.primary:hover { background: var(–accent-hot); }
+.btn.ghost {
+background: transparent;
+border: 1px solid var(–line-strong);
+color: var(–ink);
+}
+.btn.ghost:hover {
+border-color: var(–accent);
+color: var(–accent);
+background: transparent;
+}
+.btn.danger {
+background: transparent;
+border: 1px solid var(–red);
+color: var(–red);
+}
+.btn.danger:hover {
+background: var(–red);
+color: var(–ink);
+}
+.btn.tiny { padding: 6px 12px; font-size: 10px; }
+.btn.wide-btn { width: 100%; justify-content: center; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-add {
+background: transparent;
+border: 1px solid var(–accent);
+color: var(–accent);
+padding: 10px 18px;
+font: inherit;
+font-size: 11px;
+letter-spacing: 0.2em;
+text-transform: uppercase;
+cursor: pointer;
+display: inline-flex;
+align-items: center;
+gap: 8px;
+transition: all 0.2s;
+}
+.btn-add:hover { background: var(–accent); color: var(–bg); }
+.btn-add.tiny { padding: 6px 12px; font-size: 10px; }
+.btn-add .plus {
+font-family: ‘Fraunces’, serif;
+font-size: 18px;
+line-height: 0;
+font-weight: 300;
+}
+
+/* Modal / drawer */
+.modal-backdrop {
+position: fixed; inset: 0;
+background: rgba(0,0,0,0.7);
+backdrop-filter: blur(8px);
+z-index: 100;
+display: none;
+}
+.modal-backdrop.open { display: block; }
+
+.drawer {
+position: fixed;
+top: 0; right: 0; bottom: 0;
+width: 100%;
+max-width: 620px;
+background: var(–bg-2);
+z-index: 101;
+transform: translateX(100%);
+transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+display: flex;
+flex-direction: column;
+overflow: hidden;
+border-left: 1px solid var(–line);
+}
+.drawer.open { transform: translateX(0); }
+
+.drawer-head {
+padding: 22px 28px;
+border-bottom: 1px solid var(–line);
+display: flex;
+align-items: center;
+justify-content: space-between;
+background: var(–bg);
+}
+.drawer-head h3 { font-size: 22px; }
+.drawer-close {
+background: transparent;
+border: 1px solid var(–line-strong);
+color: var(–ink);
+width: 36px; height: 36px;
+cursor: pointer;
+display: grid; place-items: center;
+font-size: 18px;
+font-family: ‘Fraunces’, serif;
+}
+.drawer-close:hover {
+border-color: var(–accent);
+color: var(–accent);
+}
+
+.drawer-body {
+flex: 1;
+overflow-y: auto;
+padding: 28px;
+-webkit-overflow-scrolling: touch;
+}
+
+.drawer-foot {
+padding: 18px 28px;
+border-top: 1px solid var(–line);
+display: flex;
+gap: 12px;
+justify-content: space-between;
+background: var(–bg);
+}
+
+/* Form fields */
+.field { margin-bottom: 22px; }
+.field label {
+display: block;
+font-size: 10px;
+letter-spacing: 0.2em;
+text-transform: uppercase;
+color: var(–ink-dim);
+margin-bottom: 8px;
+font-weight: 500;
+}
+.field label .req { color: var(–red); margin-left: 4px; }
+.field .sublabel {
+font-size: 10px;
+letter-spacing: 0.2em;
+text-transform: uppercase;
+color: var(–ink-dim);
+font-weight: 500;
+}
+.field input[type=“text”],
+.field input[type=“number”],
+.field input[type=“password”],
+.field textarea,
+.field select {
+width: 100%;
+background: var(–bg);
+border: 1px solid var(–line-strong);
+color: var(–ink);
+padding: 12px 14px;
+font: inherit;
+font-family: ‘IBM Plex Mono’, monospace;
+font-size: 13px;
+transition: border-color 0.2s;
+border-radius: 0;
+}
+.field input:focus,
+.field textarea:focus,
+.field select:focus {
+outline: none;
+border-color: var(–accent);
+}
+.field textarea {
+min-height: 110px;
+resize: vertical;
+line-height: 1.6;
+}
+.field .hint {
+margin-top: 6px;
+font-size: 10px;
+color: var(–ink-faint);
+}
+
+/* Image upload */
+.img-upload {
+border: 1px dashed var(–line-strong);
+padding: 20px;
+text-align: center;
+cursor: pointer;
+transition: all 0.2s;
+position: relative;
+min-height: 160px;
+display: grid;
+place-items: center;
+background-size: cover;
+background-position: center;
+}
+.img-upload:hover { border-color: var(–accent); }
+.img-upload.has-image {
+min-height: 220px;
+border-style: solid;
+}
+.img-upload.has-image .upload-prompt { display: none; }
+.img-upload.has-image .change-overlay {
+position: absolute;
+bottom: 0; left: 0; right: 0;
+background: linear-gradient(transparent, rgba(0,0,0,0.9));
+padding: 20px 12px 12px;
+color: var(–ink);
+font-size: 10px;
+letter-spacing: 0.2em;
+text-transform: uppercase;
+}
+.img-upload input { display: none; }
+.img-upload .upload-prompt .icon {
+font-family: ‘Fraunces’, serif;
+font-size: 36px;
+font-weight: 300;
+color: var(–ink-faint);
+display: block;
+margin-bottom: 6px;
+}
+.img-upload .upload-prompt span {
+font-size: 11px;
+letter-spacing: 0.15em;
+text-transform: uppercase;
+color: var(–ink-dim);
+}
+.img-upload .change-overlay { display: none; }
+.img-upload.has-image .change-overlay { display: block; }
+
+/* Chip select */
+.chip-select {
+display: flex;
+flex-wrap: wrap;
+gap: 8px;
+padding: 10px;
+background: var(–bg);
+border: 1px solid var(–line-strong);
+min-height: 48px;
+}
+.chip {
+background: var(–bg-3);
+border: 1px solid var(–line);
+padding: 6px 12px;
+font-size: 11px;
+letter-spacing: 0.1em;
+cursor: pointer;
+transition: all 0.2s;
+user-select: none;
+}
+.chip:hover {
+border-color: var(–accent);
+color: var(–accent);
+}
+.chip.active {
+background: var(–accent);
+color: var(–bg);
+border-color: var(–accent);
+font-weight: 500;
+}
+.chip.empty-hint {
+color: var(–ink-faint);
+cursor: default;
+border: none;
+background: none;
+padding: 6px 0;
+font-style: italic;
+}
+
+/* Dialogue rows */
+.dialogue-row {
+display: grid;
+gap: 8px;
+padding: 14px;
+background: var(–bg);
+border: 1px solid var(–line);
+margin-bottom: 10px;
+position: relative;
+}
+.dialogue-row select {
+background: var(–bg-2);
+border: 1px solid var(–line);
+color: var(–accent);
+padding: 6px 10px;
+font: inherit;
+font-size: 11px;
+letter-spacing: 0.15em;
+text-transform: uppercase;
+max-width: 100%;
+}
+.dialogue-row textarea {
+background: transparent;
+border: none;
+color: var(–ink);
+font-family: ‘Fraunces’, serif;
+font-style: italic;
+font-size: 15px;
+line-height: 1.5;
+resize: vertical;
+min-height: 48px;
+padding: 6px 0;
+border-bottom: 1px dashed var(–line);
+}
+.dialogue-row textarea:focus {
+outline: none;
+border-bottom-color: var(–accent);
+}
+.dialogue-row .remove-dialogue {
+position: absolute;
+top: 8px; right: 8px;
+background: none;
+border: none;
+color: var(–ink-faint);
+cursor: pointer;
+font-size: 16px;
+font-family: ‘Fraunces’, serif;
+padding: 4px 8px;
+}
+.dialogue-row .remove-dialogue:hover { color: var(–red); }
+
+/* Auth */
+.auth-screen {
+min-height: 100vh;
+display: grid;
+place-items: center;
+padding: 24px;
+}
+.auth-card {
+max-width: 420px;
+width: 100%;
+text-align: center;
+}
+.auth-card.wide { max-width: 560px; text-align: left; }
+.auth-card h1 {
+font-size: 48px;
+font-weight: 300;
+font-style: italic;
+margin-bottom: 8px;
+}
+.auth-card > p { margin-bottom: 32px; font-size: 12px; }
+.auth-card .field { text-align: left; }
+
+.error-text {
+color: var(–red);
+margin-top: 16px;
+font-size: 11px;
+letter-spacing: 0.1em;
+text-transform: uppercase;
+min-height: 14px;
+}
+
+/* Setup panel */
+.setup-panel {
+background: var(–bg-2);
+border: 1px solid var(–line);
+padding: 32px;
+margin-top: 24px;
+}
+.setup-panel h3 {
+font-size: 20px;
+margin-bottom: 8px;
+}
+.setup-panel p {
+color: var(–ink-dim);
+font-size: 12px;
+margin-bottom: 20px;
+line-height: 1.7;
+}
+.setup-panel code {
+background: var(–bg);
+padding: 2px 8px;
+color: var(–accent);
+font-size: 11px;
+border: 1px solid var(–line);
+}
+.setup-panel textarea {
+min-height: 220px;
+font-size: 11px;
+}
+
+/* Toast */
+.toast {
+position: fixed;
+bottom: 24px; left: 50%;
+transform: translateX(-50%) translateY(100px);
+background: var(–ink);
+color: var(–bg);
+padding: 12px 22px;
+font-size: 11px;
+letter-spacing: 0.15em;
+text-transform: uppercase;
+font-weight: 500;
+z-index: 200;
+transition: transform 0.3s;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+.toast.error {
+background: var(–red);
+color: var(–ink);
+}
+
+.loader {
+display: inline-block;
+width: 14px; height: 14px;
+border: 1.5px solid var(–ink-faint);
+border-top-color: var(–accent);
+border-radius: 50%;
+animation: spin 0.8s linear infinite;
+}
+
+/* Responsive */
+@media (max-width: 720px) {
+main { padding: 24px 16px 100px; }
+.topbar { padding: 14px 16px; }
+.crumb { margin: 0 12px; font-size: 10px; }
+.brand-name { font-size: 16px; }
+.brand-sub { display: none; }
+.hero { padding: 40px 0 32px; margin-bottom: 28px; }
+.grid { grid-template-columns: 1fr; }
+.scene-card { grid-template-columns: auto 1fr; }
+.scene-duration { grid-column: 2; }
+.tab-btn { padding: 12px 14px; }
+.drawer { max-width: 100%; }
+.drawer-body,
+.drawer-head,
+.drawer-foot {
+padding-left: 20px;
+padding-right: 20px;
+}
+}
+
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+</head>
+<body>
+
+<div id="loading-screen">
+  <div class="loading-inner">
+    <div class="spinner"></div>
+    <div class="loading-text">Loading Reel.</div>
+  </div>
+</div>
+
+<div id="fatal-error" class="hidden">
+  <h2>Startup Error</h2>
+  <p>Something went wrong. Details:</p>
+  <pre id="fatal-error-msg"></pre>
+  <p class="hint">Try reload. If it persists, share this screen.</p>
+</div>
+
+<div id="setup-screen" class="auth-screen hidden">
+  <div class="auth-card wide">
+    <h1 class="display"><em>Setup.</em></h1>
+    <p class="mono-label center">ONE-TIME FIREBASE CONFIG</p>
+    <div class="setup-panel">
+      <h3>Paste your Firebase config</h3>
+      <p>From Firebase Console &rarr; Project Settings &rarr; Your apps &rarr; Web config. Include the whole object with <code>databaseURL</code>.</p>
+      <div class="field">
+        <textarea id="firebase-config-input" placeholder='{ apiKey: "...", authDomain: "...", databaseURL: "https://...firebasedatabase.app", projectId: "...", storageBucket: "...", ... }'></textarea>
+      </div>
+      <button class="btn primary wide-btn" id="btn-save-config">Save Configuration</button>
+    </div>
+  </div>
+</div>
+
+<div id="auth-screen" class="auth-screen hidden">
+  <div class="auth-card">
+    <div class="brand-mark center"><span>R</span></div>
+    <h1 class="display"><em>Reel.</em></h1>
+    <p class="mono-label center">MOVIE STUDIO</p>
+    <p class="muted center">Sign in to build your screenplay. Projects sync to the cloud.</p>
+    <div class="field">
+      <label>Email</label>
+      <input type="text" id="auth-email" autocomplete="email" inputmode="email">
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="auth-password" autocomplete="current-password">
+      <div class="hint">Min 6 chars. Account created on first login.</div>
+    </div>
+    <button class="btn primary wide-btn" id="btn-signin">Sign In / Create Account</button>
+    <p id="auth-error" class="error-text"></p>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark"><span>R</span></div>
+      <div>
+        <div class="brand-name">Reel.</div>
+        <div class="brand-sub">MOVIE STUDIO</div>
+      </div>
+    </div>
+    <nav class="crumb" id="breadcrumb"></nav>
+    <div class="row gap-12">
+      <div class="auth-chip live" id="auth-chip">
+        <div class="dot"></div>
+        <span id="auth-email-display">-</span>
+      </div>
+      <button class="btn ghost tiny" id="btn-signout">Out</button>
+    </div>
+  </header>
+
+  <main>
+    <div id="view-projects">
+      <div class="hero">
+        <span class="mono-label accent">Welcome back</span>
+        <h1 class="display"><em>Build movies</em>, one scene at a time.</h1>
+        <p class="muted">Create a project. Cast your characters. Scout your locations. Write your scenes. Then hand it off to the generator.</p>
+      </div>
+      <div class="section-head">
+        <h2 class="display">Projects</h2>
+        <span class="count" id="projects-count">0 ITEMS</span>
+      </div>
+      <div class="grid" id="projects-grid"></div>
+    </div>
+
+<div id="view-project" class="hidden">
+  <div class="project-header">
+    <span class="mono-label accent" id="project-eyebrow">PROJECT</span>
+    <h1 class="display" id="project-title">Untitled</h1>
+    <div class="meta" id="project-meta"></div>
+  </div>
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="characters">Characters <span class="badge" id="badge-characters">0</span></button>
+    <button class="tab-btn" data-tab="locations">Locations <span class="badge" id="badge-locations">0</span></button>
+    <button class="tab-btn" data-tab="scenes">Scenes <span class="badge" id="badge-scenes">0</span></button>
+    <button class="tab-btn" data-tab="settings">Settings</button>
+  </div>
+
+  <div class="tab-content" id="tab-characters">
+    <div class="row spread mb-20">
+      <span class="mono-label">Cast</span>
+      <button class="btn-add" id="btn-add-character"><span class="plus">+</span> Add Character</button>
+    </div>
+    <div id="characters-list"></div>
+  </div>
+
+  <div class="tab-content hidden" id="tab-locations">
+    <div class="row spread mb-20">
+      <span class="mono-label">Sets</span>
+      <button class="btn-add" id="btn-add-location"><span class="plus">+</span> Add Location</button>
+    </div>
+    <div id="locations-list"></div>
+  </div>
+
+  <div class="tab-content hidden" id="tab-scenes">
+    <div class="row spread mb-20">
+      <span class="mono-label">Screenplay</span>
+      <button class="btn-add" id="btn-add-scene"><span class="plus">+</span> Add Scene</button>
+    </div>
+    <div id="scenes-list"></div>
+  </div>
+
+  <div class="tab-content hidden" id="tab-settings">
+    <div class="entity-card static">
+      <h4>Danger Zone</h4>
+      <p class="muted small">Deleting this project removes all characters, locations, and scenes. Cannot be undone.</p>
+      <button class="btn danger" id="btn-delete-project">Delete Project</button>
+    </div>
+  </div>
+</div>
+
+  </main>
+</div>
+
+<div class="modal-backdrop" id="modal-backdrop"></div>
+
+<aside class="drawer" id="drawer-project">
+  <div class="drawer-head">
+    <div>
+      <div class="mono-label accent">Project</div>
+      <h3 id="drawer-project-title">New Project</h3>
+    </div>
+    <button class="drawer-close" data-close>&times;</button>
+  </div>
+  <div class="drawer-body">
+    <div class="field">
+      <label>Title <span class="req">*</span></label>
+      <input type="text" id="project-form-title">
+    </div>
+    <div class="field">
+      <label>Logline</label>
+      <textarea id="project-form-logline"></textarea>
+    </div>
+    <div class="field">
+      <label>Genre / Tone</label>
+      <input type="text" id="project-form-genre">
+    </div>
+  </div>
+  <div class="drawer-foot">
+    <button class="btn ghost" data-close>Cancel</button>
+    <button class="btn primary" id="project-form-save">Save Project</button>
+  </div>
+</aside>
+
+<aside class="drawer" id="drawer-character">
+  <div class="drawer-head">
+    <div>
+      <div class="mono-label accent">Character</div>
+      <h3 id="drawer-character-title">New Character</h3>
+    </div>
+    <button class="drawer-close" data-close>&times;</button>
+  </div>
+  <div class="drawer-body">
+    <div class="field">
+      <label>Name <span class="req">*</span></label>
+      <input type="text" id="char-form-name">
+    </div>
+    <div class="field">
+      <label>Reference Photo</label>
+      <label class="img-upload" id="char-upload-label">
+        <input type="file" accept="image/*" id="char-form-photo">
+        <div class="upload-prompt">
+          <span class="icon">+</span>
+          <span>Upload Reference</span>
+        </div>
+        <div class="change-overlay">Tap to change</div>
+      </label>
+    </div>
+    <div class="field">
+      <label>Physical Description</label>
+      <textarea id="char-form-appearance"></textarea>
+    </div>
+    <div class="field">
+      <label>Personality / How They Act</label>
+      <textarea id="char-form-personality"></textarea>
+    </div>
+    <div class="field">
+      <label>Voice / Accent</label>
+      <input type="text" id="char-form-voice">
+    </div>
+  </div>
+  <div class="drawer-foot">
+    <button class="btn danger hidden" id="char-form-delete">Delete</button>
+    <div class="row gap-12 ml-auto">
+      <button class="btn ghost" data-close>Cancel</button>
+      <button class="btn primary" id="char-form-save">Save Character</button>
+    </div>
+  </div>
+</aside>
+
+<aside class="drawer" id="drawer-location">
+  <div class="drawer-head">
+    <div>
+      <div class="mono-label accent">Location</div>
+      <h3 id="drawer-location-title">New Location</h3>
+    </div>
+    <button class="drawer-close" data-close>&times;</button>
+  </div>
+  <div class="drawer-body">
+    <div class="field">
+      <label>Name <span class="req">*</span></label>
+      <input type="text" id="loc-form-name">
+    </div>
+    <div class="field">
+      <label>Reference Photo</label>
+      <label class="img-upload" id="loc-upload-label">
+        <input type="file" accept="image/*" id="loc-form-photo">
+        <div class="upload-prompt">
+          <span class="icon">+</span>
+          <span>Upload Reference</span>
+        </div>
+        <div class="change-overlay">Tap to change</div>
+      </label>
+    </div>
+    <div class="field">
+      <label>Description</label>
+      <textarea id="loc-form-description"></textarea>
+    </div>
+    <div class="field">
+      <label>Atmosphere / Mood</label>
+      <input type="text" id="loc-form-mood">
+    </div>
+    <div class="field">
+      <label>Time of Day</label>
+      <select id="loc-form-timeofday">
+        <option value="">-</option>
+        <option>Dawn</option>
+        <option>Morning</option>
+        <option>Midday</option>
+        <option>Afternoon</option>
+        <option>Golden Hour</option>
+        <option>Dusk</option>
+        <option>Night</option>
+        <option>Late Night</option>
+      </select>
+    </div>
+  </div>
+  <div class="drawer-foot">
+    <button class="btn danger hidden" id="loc-form-delete">Delete</button>
+    <div class="row gap-12 ml-auto">
+      <button class="btn ghost" data-close>Cancel</button>
+      <button class="btn primary" id="loc-form-save">Save Location</button>
+    </div>
+  </div>
+</aside>
+
+<aside class="drawer" id="drawer-scene">
+  <div class="drawer-head">
+    <div>
+      <div class="mono-label accent" id="scene-form-number">Scene</div>
+      <h3 id="drawer-scene-title">New Scene</h3>
+    </div>
+    <button class="drawer-close" data-close>&times;</button>
+  </div>
+  <div class="drawer-body">
+    <div class="field">
+      <label>Scene Title <span class="req">*</span></label>
+      <input type="text" id="scene-form-title">
+    </div>
+    <div class="row gap-16">
+      <div class="field flex1">
+        <label>Duration (sec)</label>
+        <input type="number" id="scene-form-duration" min="2" max="30" value="8">
+      </div>
+      <div class="field flex1">
+        <label>Location</label>
+        <select id="scene-form-location"><option value="">- Select -</option></select>
+      </div>
+    </div>
+    <div class="field">
+      <label>Characters in Scene</label>
+      <div class="chip-select" id="scene-form-characters"></div>
+    </div>
+    <div class="field">
+      <label>Camera / Shot</label>
+      <input type="text" id="scene-form-camera">
+    </div>
+    <div class="field">
+      <label>Action / What Happens <span class="req">*</span></label>
+      <textarea id="scene-form-action"></textarea>
+    </div>
+    <div class="field">
+      <label>Character Reactions / Emotions</label>
+      <textarea id="scene-form-reactions"></textarea>
+    </div>
+    <div class="field">
+      <label>Ambient Details</label>
+      <textarea id="scene-form-ambient"></textarea>
+    </div>
+    <div class="field">
+      <label class="row spread mb-10">
+        <span class="sublabel">Dialogue</span>
+        <button class="btn-add tiny" type="button" id="btn-add-dialogue"><span class="plus">+</span> Line</button>
+      </label>
+      <div id="scene-form-dialogue"></div>
+    </div>
+  </div>
+  <div class="drawer-foot">
+    <button class="btn danger hidden" id="scene-form-delete">Delete</button>
+    <div class="row gap-12 ml-auto">
+      <button class="btn ghost" data-close>Cancel</button>
+      <button class="btn primary" id="scene-form-save">Save Scene</button>
+    </div>
+  </div>
+</aside>
+
+<div class="toast" id="toast">Saved.</div>
+
+<script>
+window.addEventListener('error', function(e) {
+  var el = document.getElementById('fatal-error');
+  var msg = document.getElementById('fatal-error-msg');
+  if (el && msg) {
+    el.classList.remove('hidden');
+    msg.textContent = (e.message || 'Error') + '\nFile: ' + (e.filename || '?') + '\nLine: ' + (e.lineno || '?') + '\n\n' + (e.error && e.error.stack ? e.error.stack : '');
+  }
+});
+</script>
+
+<script>
+/* Reel - Movie Studio */
+/* Plain ASCII only. No fancy quotes. */
+
+var STATE = {
+  user: null,
+  projectId: null,
+  project: null,
+  characters: {},
+  locations: {},
+  scenes: {},
+  editingId: null,
+  pendingImage: null,
+  dialogueRows: []
+};
+
+var db = null;
+var storage = null;
+var auth = null;
+
+var CONFIG_KEY = "reel_firebase_config";
+
+/* ============ HELPERS ============ */
+
+function $(id) { return document.getElementById(id); }
+
+function esc(s) {
+  if (s == null) return "";
+  return String(s)
+    .split("&").join("&amp;")
+    .split("<").join("&lt;")
+    .split(">").join("&gt;")
+    .split('"').join("&quot;")
+    .split("'").join("&#39;");
+}
+
+function toast(msg, isError) {
+  var el = $("toast");
+  el.textContent = msg;
+  if (isError) el.classList.add("error");
+  else el.classList.remove("error");
+  el.classList.add("show");
+  setTimeout(function () { el.classList.remove("show"); }, 2400);
+}
+
+function showScreen(id) {
+  var loading = $("loading-screen");
+  if (loading) loading.style.display = "none";
+  ["auth-screen", "setup-screen", "app"].forEach(function (s) {
+    var el = $(s);
+    if (s === id) el.classList.remove("hidden");
+    else el.classList.add("hidden");
+  });
+}
+
+function openDrawer(id) {
+  $("modal-backdrop").classList.add("open");
+  $(id).classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+
+function closeAllDrawers() {
+  $("modal-backdrop").classList.remove("open");
+  var drawers = document.querySelectorAll(".drawer");
+  for (var i = 0; i < drawers.length; i++) drawers[i].classList.remove("open");
+  document.body.style.overflow = "";
+  STATE.pendingImage = null;
+}
+
+function setUploadPreview(labelId, url) {
+  var el = $(labelId);
+  if (url) {
+    el.classList.add("has-image");
+    el.style.backgroundImage = "url('" + url + "')";
+  } else {
+    el.classList.remove("has-image");
+    el.style.backgroundImage = "";
+  }
+}
+
+/* ============ FIREBASE BOOTSTRAP ============ */
+
+function initFirebase(config) {
+  try {
+    firebase.initializeApp(config);
+    auth = firebase.auth();
+    db = firebase.database();
+    storage = firebase.storage();
+    return true;
+  } catch (e) {
+    console.error("Firebase init failed:", e);
+    return false;
+  }
+}
+
+function bootstrap() {
+  var stored = localStorage.getItem(CONFIG_KEY);
+  if (!stored) {
+    showScreen("setup-screen");
+    return;
+  }
+  try {
+    var config = JSON.parse(stored);
+    if (!initFirebase(config)) {
+      showScreen("setup-screen");
+      return;
+    }
+    auth.onAuthStateChanged(function (user) {
+      if (user) {
+        STATE.user = user;
+        $("auth-email-display").textContent = user.email;
+        showScreen("app");
+        loadProjects();
+      } else {
+        showScreen("auth-screen");
+      }
+    });
+  } catch (e) {
+    console.error(e);
+    showScreen("setup-screen");
+  }
+}
+
+/* ============ SETUP SCREEN ============ */
+
+function handleSaveConfig() {
+  var raw = $("firebase-config-input").value.trim();
+  var config;
+  try {
+    if (raw.charAt(0) !== "{") throw new Error("Must start with {");
+    var jsonStr = raw
+      .replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":')
+      .replace(/'/g, '"')
+      .replace(/,(\s*[}\]])/g, "$1");
+    config = JSON.parse(jsonStr);
+  } catch (e) {
+    toast("Invalid config. Paste the full firebaseConfig object.", true);
+    return;
+  }
+  if (!config.apiKey || !config.databaseURL) {
+    toast("Config must include apiKey and databaseURL", true);
+    return;
+  }
+  localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
+  location.reload();
+}
+
+/* ============ AUTH ============ */
+
+function handleSignIn() {
+  var email = $("auth-email").value.trim();
+  var password = $("auth-password").value;
+  var errEl = $("auth-error");
+  errEl.textContent = "";
+  if (!email || !password) {
+    errEl.textContent = "Email and password required.";
+    return;
+  }
+  auth.signInWithEmailAndPassword(email, password).catch(function (e) {
+    var code = e.code || "";
+    if (code === "auth/user-not-found" || code === "auth/invalid-login-credentials" || code === "auth/invalid-credential") {
+      auth.createUserWithEmailAndPassword(email, password).catch(function (e2) {
+        errEl.textContent = e2.message;
+      });
+    } else {
+      errEl.textContent = e.message;
+    }
+  });
+}
+
+/* ============ NAVIGATION ============ */
+
+function navigateHome() {
+  STATE.projectId = null;
+  STATE.project = null;
+  $("view-project").classList.add("hidden");
+  $("view-projects").classList.remove("hidden");
+  renderBreadcrumb();
+  loadProjects();
+}
+
+function renderBreadcrumb() {
+  var bc = $("breadcrumb");
+  if (!STATE.project) {
+    bc.innerHTML = '<span class="current">All Projects</span>';
+  } else {
+    bc.innerHTML =
+      '<button id="crumb-home">Projects</button>' +
+      '<span class="sep">/</span>' +
+      '<span class="current">' + esc(STATE.project.title) + '</span>';
+    var homeBtn = $("crumb-home");
+    if (homeBtn) homeBtn.onclick = navigateHome;
+  }
+}
+
+/* ============ DB REFS ============ */
+
+function uid() { return STATE.user.uid; }
+function projectsRef() { return db.ref("users/" + uid() + "/projects"); }
+function projectRef(pid) { return db.ref("users/" + uid() + "/projects/" + pid); }
+function entityRef(pid, type) { return db.ref("users/" + uid() + "/data/" + pid + "/" + type); }
+
+/* ============ PROJECTS LIST ============ */
+
+function loadProjects() {
+  var grid = $("projects-grid");
+  projectsRef().once("value").then(function (snap) {
+    var data = snap.val() || {};
+    var entries = Object.keys(data).map(function (k) {
+      return [k, data[k]];
+    });
+    entries.sort(function (a, b) {
+      return (b[1].updatedAt || 0) - (a[1].updatedAt || 0);
+    });
+    $("projects-count").textContent = entries.length + " ITEM" + (entries.length === 1 ? "" : "S");
+
+    var html = "";
+    for (var i = 0; i < entries.length; i++) {
+      var id = entries[i][0];
+      var p = entries[i][1];
+      var counts = p.counts || {};
+      html +=
+        '<button class="project-card" data-project-id="' + id + '">' +
+          '<span class="tag">' + esc(p.genre || "UNTITLED GENRE") + '</span>' +
+          '<h3>' + esc(p.title) + '</h3>' +
+          '<p class="logline">' + esc(p.logline || "No logline yet.") + '</p>' +
+          '<div class="stats">' +
+            '<span><strong>' + (counts.characters || 0) + '</strong>Cast</span>' +
+            '<span><strong>' + (counts.locations || 0) + '</strong>Sets</span>' +
+            '<span><strong>' + (counts.scenes || 0) + '</strong>Scenes</span>' +
+          '</div>' +
+        '</button>';
+    }
+    html +=
+      '<button class="new-project-card" id="btn-new-project">' +
+        '<div class="plus-big">+</div>' +
+        '<span>New Project</span>' +
+      '</button>';
+
+    grid.innerHTML = html;
+
+    var cards = grid.querySelectorAll(".project-card");
+    for (var j = 0; j < cards.length; j++) {
+      (function (card) {
+        card.onclick = function () { openProject(card.getAttribute("data-project-id")); };
+      })(cards[j]);
+    }
+    $("btn-new-project").onclick = function () { openProjectForm(); };
+  });
+}
+
+function openProjectForm(projectId) {
+  STATE.editingId = projectId || null;
+  var p = projectId ? STATE.project : { title: "", logline: "", genre: "" };
+  $("drawer-project-title").textContent = projectId ? "Edit Project" : "New Project";
+  $("project-form-title").value = p.title || "";
+  $("project-form-logline").value = p.logline || "";
+  $("project-form-genre").value = p.genre || "";
+  openDrawer("drawer-project");
+}
+
+function handleProjectSave() {
+  var title = $("project-form-title").value.trim();
+  if (!title) { toast("Title is required", true); return; }
+  var payload = {
+    title: title,
+    logline: $("project-form-logline").value.trim(),
+    genre: $("project-form-genre").value.trim(),
+    updatedAt: Date.now()
+  };
+
+  if (STATE.editingId) {
+    projectRef(STATE.editingId).update(payload).then(function () {
+      STATE.project = Object.assign({}, STATE.project, payload);
+      $("project-title").textContent = title;
+      $("project-eyebrow").textContent = payload.genre || "PROJECT";
+      renderBreadcrumb();
+      closeAllDrawers();
+      toast("Project saved.");
+    }).catch(function (e) { toast("Save failed: " + e.message, true); });
+  } else {
+    payload.createdAt = Date.now();
+    payload.counts = { characters: 0, locations: 0, scenes: 0 };
+    var ref = projectsRef().push();
+    ref.set(payload).then(function () {
+      STATE.projectId = ref.key;
+      openProject(ref.key);
+      closeAllDrawers();
+      toast("Project created.");
+    }).catch(function (e) { toast("Save failed: " + e.message, true); });
+  }
+}
+
+function openProject(projectId) {
+  STATE.projectId = projectId;
+  projectRef(projectId).once("value").then(function (snap) {
+    STATE.project = snap.val();
+    if (!STATE.project) { toast("Project not found", true); return; }
+
+    $("view-projects").classList.add("hidden");
+    $("view-project").classList.remove("hidden");
+    $("project-title").textContent = STATE.project.title;
+    $("project-eyebrow").textContent = STATE.project.genre || "PROJECT";
+
+    var createdDate = STATE.project.createdAt
+      ? new Date(STATE.project.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+      : "\u2014";
+    var metaHtml = "<span>Created " + createdDate + "</span>";
+    if (STATE.project.logline) {
+      metaHtml += '<span style="font-style:italic;font-family:Fraunces,serif;text-transform:none;letter-spacing:0;">' +
+        esc(STATE.project.logline) + '</span>';
+    }
+    $("project-meta").innerHTML = metaHtml;
+
+    renderBreadcrumb();
+    switchTab("characters");
+    loadEntities();
+  });
+}
+
+function deleteCurrentProject() {
+  if (!confirm("Delete project \"" + STATE.project.title + "\" and all its data? This cannot be undone.")) return;
+  var pid = STATE.projectId;
+  projectRef(pid).remove().then(function () {
+    return db.ref("users/" + uid() + "/data/" + pid).remove();
+  }).then(function () {
+    toast("Project deleted.");
+    navigateHome();
+  }).catch(function (e) { toast("Delete failed: " + e.message, true); });
+}
+
+/* ============ TABS ============ */
+
+function switchTab(name) {
+  var btns = document.querySelectorAll(".tab-btn");
+  for (var i = 0; i < btns.length; i++) {
+    if (btns[i].getAttribute("data-tab") === name) btns[i].classList.add("active");
+    else btns[i].classList.remove("active");
+  }
+  var contents = document.querySelectorAll(".tab-content");
+  for (var j = 0; j < contents.length; j++) contents[j].classList.add("hidden");
+  $("tab-" + name).classList.remove("hidden");
+}
+
+/* ============ LOAD ENTITIES ============ */
+
+function loadEntities() {
+  var pid = STATE.projectId;
+  Promise.all([
+    entityRef(pid, "characters").once("value"),
+    entityRef(pid, "locations").once("value"),
+    entityRef(pid, "scenes").once("value")
+  ]).then(function (results) {
+    STATE.characters = results[0].val() || {};
+    STATE.locations = results[1].val() || {};
+    STATE.scenes = results[2].val() || {};
+    renderCharacters();
+    renderLocations();
+    renderScenes();
+    updateCounts();
+  });
+}
+
+function updateCounts() {
+  var c = Object.keys(STATE.characters).length;
+  var l = Object.keys(STATE.locations).length;
+  var s = Object.keys(STATE.scenes).length;
+  $("badge-characters").textContent = c;
+  $("badge-locations").textContent = l;
+  $("badge-scenes").textContent = s;
+  projectRef(STATE.projectId).update({ counts: { characters: c, locations: l, scenes: s } });
+}
+
+/* ============ CHARACTERS ============ */
+
+function renderCharacters() {
+  var list = $("characters-list");
+  var ids = Object.keys(STATE.characters);
+  if (ids.length === 0) {
+    list.innerHTML =
+      '<div class="empty-state">' +
+        '<h3>Cast the film.</h3>' +
+        '<p>Add each character once - name, description, personality, reference photo. Reference them by name in every scene.</p>' +
+        '<button class="btn primary" id="btn-first-char">Add First Character</button>' +
+      '</div>';
+    $("btn-first-char").onclick = function () { openCharacterForm(); };
+    return;
+  }
+  var html = "";
+  for (var i = 0; i < ids.length; i++) {
+    var id = ids[i];
+    var c = STATE.characters[id];
+    var thumbStyle = c.photoUrl ? ' style="background-image:url(\'' + esc(c.photoUrl) + '\')"' : "";
+    var thumbClass = c.photoUrl ? "thumb" : "thumb empty";
+    html +=
+      '<button class="entity-card" data-char-id="' + id + '">' +
+        '<div class="' + thumbClass + '"' + thumbStyle + '></div>' +
+        '<div class="body">' +
+          '<h4>' + esc(c.name) + '</h4>' +
+          '<div class="desc">' + esc(c.appearance || c.personality || "No description.") + '</div>' +
+        '</div>' +
+      '</button>';
+  }
+  list.innerHTML = html;
+  var cards = list.querySelectorAll("[data-char-id]");
+  for (var j = 0; j < cards.length; j++) {
+    (function (card) {
+      card.onclick = function () { openCharacterForm(card.getAttribute("data-char-id")); };
+    })(cards[j]);
+  }
+}
+
+function openCharacterForm(characterId) {
+  STATE.editingId = characterId || null;
+  STATE.pendingImage = null;
+  var c = characterId ? STATE.characters[characterId] : {};
+  $("drawer-character-title").textContent = characterId ? "Edit Character" : "New Character";
+  $("char-form-name").value = c.name || "";
+  $("char-form-appearance").value = c.appearance || "";
+  $("char-form-personality").value = c.personality || "";
+  $("char-form-voice").value = c.voice || "";
+  setUploadPreview("char-upload-label", c.photoUrl || null);
+  if (characterId) $("char-form-delete").classList.remove("hidden");
+  else $("char-form-delete").classList.add("hidden");
+  openDrawer("drawer-character");
+}
+
+function handleCharacterSave() {
+  var name = $("char-form-name").value.trim();
+  if (!name) { toast("Name required", true); return; }
+  var btn = $("char-form-save");
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loader"></span> Saving...';
+
+  var pid = STATE.projectId;
+  var id = STATE.editingId || entityRef(pid, "characters").push().key;
+  var photoUrl = (STATE.characters[id] && STATE.characters[id].photoUrl) || null;
+
+  var uploadPromise;
+  if (STATE.pendingImage) {
+    var path = "users/" + uid() + "/data/" + pid + "/characters/" + id + ".jpg";
+    var ref = storage.ref(path);
+    uploadPromise = ref.put(STATE.pendingImage).then(function () { return ref.getDownloadURL(); }).then(function (url) { photoUrl = url; });
+  } else {
+    uploadPromise = Promise.resolve();
+  }
+
+  uploadPromise.then(function () {
+    var payload = {
+      name: name,
+      appearance: $("char-form-appearance").value.trim(),
+      personality: $("char-form-personality").value.trim(),
+      voice: $("char-form-voice").value.trim(),
+      photoUrl: photoUrl,
+      updatedAt: Date.now()
+    };
+    return entityRef(pid, "characters").child(id).update(payload).then(function () {
+      STATE.characters[id] = Object.assign({}, STATE.characters[id] || {}, payload);
+      renderCharacters();
+      updateCounts();
+      closeAllDrawers();
+      toast("Character saved.");
+    });
+  }).catch(function (e) {
+    toast("Save failed: " + e.message, true);
+  }).then(function () {
+    btn.disabled = false;
+    btn.textContent = "Save Character";
+  });
+}
+
+function handleCharacterDelete() {
+  if (!confirm("Delete this character?")) return;
+  var id = STATE.editingId;
+  entityRef(STATE.projectId, "characters").child(id).remove().then(function () {
+    delete STATE.characters[id];
+    renderCharacters();
+    updateCounts();
+    closeAllDrawers();
+    toast("Character deleted.");
+  });
+}
+
+/* ============ LOCATIONS ============ */
+
+function renderLocations() {
+  var list = $("locations-list");
+  var ids = Object.keys(STATE.locations);
+  if (ids.length === 0) {
+    list.innerHTML =
+      '<div class="empty-state">' +
+        '<h3>Scout your sets.</h3>' +
+        '<p>Define each location once. Scenes reuse them, so the visual language stays consistent.</p>' +
+        '<button class="btn primary" id="btn-first-loc">Add First Location</button>' +
+      '</div>';
+    $("btn-first-loc").onclick = function () { openLocationForm(); };
+    return;
+  }
+  var html = "";
+  for (var i = 0; i < ids.length; i++) {
+    var id = ids[i];
+    var l = STATE.locations[id];
+    var thumbStyle = l.photoUrl ? ' style="background-image:url(\'' + esc(l.photoUrl) + '\')"' : "";
+    var thumbClass = l.photoUrl ? "thumb" : "thumb empty";
+    html +=
+      '<button class="entity-card" data-loc-id="' + id + '">' +
+        '<div class="' + thumbClass + '"' + thumbStyle + '></div>' +
+        '<div class="body">' +
+          '<h4>' + esc(l.name) + '</h4>' +
+          '<div class="desc">' + esc(l.description || l.mood || "No description.") + '</div>' +
+        '</div>' +
+      '</button>';
+  }
+  list.innerHTML = html;
+  var cards = list.querySelectorAll("[data-loc-id]");
+  for (var j = 0; j < cards.length; j++) {
+    (function (card) {
+      card.onclick = function () { openLocationForm(card.getAttribute("data-loc-id")); };
+    })(cards[j]);
+  }
+}
+
+function openLocationForm(locationId) {
+  STATE.editingId = locationId || null;
+  STATE.pendingImage = null;
+  var l = locationId ? STATE.locations[locationId] : {};
+  $("drawer-location-title").textContent = locationId ? "Edit Location" : "New Location";
+  $("loc-form-name").value = l.name || "";
+  $("loc-form-description").value = l.description || "";
+  $("loc-form-mood").value = l.mood || "";
+  $("loc-form-timeofday").value = l.timeOfDay || "";
+  setUploadPreview("loc-upload-label", l.photoUrl || null);
+  if (locationId) $("loc-form-delete").classList.remove("hidden");
+  else $("loc-form-delete").classList.add("hidden");
+  openDrawer("drawer-location");
+}
+
+function handleLocationSave() {
+  var name = $("loc-form-name").value.trim();
+  if (!name) { toast("Name required", true); return; }
+  var btn = $("loc-form-save");
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loader"></span> Saving...';
+
+  var pid = STATE.projectId;
+  var id = STATE.editingId || entityRef(pid, "locations").push().key;
+  var photoUrl = (STATE.locations[id] && STATE.locations[id].photoUrl) || null;
+
+  var uploadPromise;
+  if (STATE.pendingImage) {
+    var path = "users/" + uid() + "/data/" + pid + "/locations/" + id + ".jpg";
+    var ref = storage.ref(path);
+    uploadPromise = ref.put(STATE.pendingImage).then(function () { return ref.getDownloadURL(); }).then(function (url) { photoUrl = url; });
+  } else {
+    uploadPromise = Promise.resolve();
+  }
+
+  uploadPromise.then(function () {
+    var payload = {
+      name: name,
+      description: $("loc-form-description").value.trim(),
+      mood: $("loc-form-mood").value.trim(),
+      timeOfDay: $("loc-form-timeofday").value,
+      photoUrl: photoUrl,
+      updatedAt: Date.now()
+    };
+    return entityRef(pid, "locations").child(id).update(payload).then(function () {
+      STATE.locations[id] = Object.assign({}, STATE.locations[id] || {}, payload);
+      renderLocations();
+      updateCounts();
+      closeAllDrawers();
+      toast("Location saved.");
+    });
+  }).catch(function (e) {
+    toast("Save failed: " + e.message, true);
+  }).then(function () {
+    btn.disabled = false;
+    btn.textContent = "Save Location";
+  });
+}
+
+function handleLocationDelete() {
+  if (!confirm("Delete this location?")) return;
+  var id = STATE.editingId;
+  entityRef(STATE.projectId, "locations").child(id).remove().then(function () {
+    delete STATE.locations[id];
+    renderLocations();
+    updateCounts();
+    closeAllDrawers();
+    toast("Location deleted.");
+  });
+}
+
+/* ============ SCENES ============ */
+
+function renderScenes() {
+  var list = $("scenes-list");
+  var ids = Object.keys(STATE.scenes);
+  var entries = ids.map(function (k) { return [k, STATE.scenes[k]]; });
+  entries.sort(function (a, b) { return (a[1].order || 0) - (b[1].order || 0); });
+
+  if (entries.length === 0) {
+    list.innerHTML =
+      '<div class="empty-state">' +
+        '<h3>Write the screenplay.</h3>' +
+        '<p>Each scene is one clip - 5 to 15 seconds. Describe what happens, who is there, how the camera moves, what they say.</p>' +
+        '<button class="btn primary" id="btn-first-scene">Add First Scene</button>' +
+      '</div>';
+    $("btn-first-scene").onclick = function () { openSceneForm(); };
+    return;
+  }
+
+  var html = "";
+  for (var i = 0; i < entries.length; i++) {
+    var id = entries[i][0];
+    var s = entries[i][1];
+    var loc = s.locationId && STATE.locations[s.locationId] ? STATE.locations[s.locationId].name : null;
+    var charNames = [];
+    if (s.characterIds) {
+      for (var k = 0; k < s.characterIds.length; k++) {
+        var c = STATE.characters[s.characterIds[k]];
+        if (c) charNames.push(c.name);
+      }
+    }
+    var numStr = (i + 1 < 10 ? "0" : "") + (i + 1);
+    var metaParts = [];
+    if (loc) metaParts.push('<span>' + esc(loc) + '</span>');
+    if (charNames.length) metaParts.push('<span>' + esc(charNames.join(", ")) + '</span>');
+    if (s.camera) metaParts.push('<span>' + esc(s.camera) + '</span>');
+
+    html +=
+      '<button class="scene-card" data-scene-id="' + id + '">' +
+        '<div class="scene-number">' + numStr + '<small>SCN</small></div>' +
+        '<div class="scene-body">' +
+          '<h4>' + esc(s.title || "Untitled scene") + '</h4>' +
+          '<div class="scene-meta">' + metaParts.join(" / ") + '</div>' +
+          '<div class="scene-action">' + esc(s.action || "") + '</div>' +
+        '</div>' +
+        '<div class="scene-duration">' + (s.duration || 8) + 's</div>' +
+      '</button>';
+  }
+  list.innerHTML = html;
+  var cards = list.querySelectorAll("[data-scene-id]");
+  for (var j = 0; j < cards.length; j++) {
+    (function (card) {
+      card.onclick = function () { openSceneForm(card.getAttribute("data-scene-id")); };
+    })(cards[j]);
+  }
+}
+
+function openSceneForm(sceneId) {
+  STATE.editingId = sceneId || null;
+  var s = sceneId ? STATE.scenes[sceneId] : {};
+  var ids = Object.keys(STATE.scenes);
+  var scnNum = sceneId ? (ids.indexOf(sceneId) + 1) : (ids.length + 1);
+
+  $("drawer-scene-title").textContent = sceneId ? "Edit Scene" : "New Scene";
+  $("scene-form-number").textContent = "Scene " + (scnNum < 10 ? "0" : "") + scnNum;
+  $("scene-form-title").value = s.title || "";
+  $("scene-form-duration").value = s.duration || 8;
+  $("scene-form-camera").value = s.camera || "";
+  $("scene-form-action").value = s.action || "";
+  $("scene-form-reactions").value = s.reactions || "";
+  $("scene-form-ambient").value = s.ambient || "";
+
+  // Location dropdown
+  var locOptions = '<option value="">- Select -</option>';
+  var locIds = Object.keys(STATE.locations);
+  for (var i = 0; i < locIds.length; i++) {
+    var lid = locIds[i];
+    var selected = s.locationId === lid ? " selected" : "";
+    locOptions += '<option value="' + lid + '"' + selected + ">" + esc(STATE.locations[lid].name) + "</option>";
+  }
+  $("scene-form-location").innerHTML = locOptions;
+
+  // Character chips
+  var chipBox = $("scene-form-characters");
+  var selectedChars = {};
+  if (s.characterIds) {
+    for (var j = 0; j < s.characterIds.length; j++) selectedChars[s.characterIds[j]] = true;
+  }
+  var charIds = Object.keys(STATE.characters);
+  if (charIds.length === 0) {
+    chipBox.innerHTML = '<span class="chip empty-hint">No characters yet - add some first</span>';
+  } else {
+    var chipHtml = "";
+    for (var m = 0; m < charIds.length; m++) {
+      var cid = charIds[m];
+      var cls = selectedChars[cid] ? "chip active" : "chip";
+      chipHtml += '<span class="' + cls + '" data-char-id="' + cid + '">' + esc(STATE.characters[cid].name) + "</span>";
+    }
+    chipBox.innerHTML = chipHtml;
+    var chips = chipBox.querySelectorAll(".chip");
+    for (var n = 0; n < chips.length; n++) {
+      (function (chip) {
+        chip.onclick = function () { chip.classList.toggle("active"); };
+      })(chips[n]);
+    }
+  }
+
+  STATE.dialogueRows = s.dialogue ? s.dialogue.slice() : [];
+  renderDialogueRows();
+
+  if (sceneId) $("scene-form-delete").classList.remove("hidden");
+  else $("scene-form-delete").classList.add("hidden");
+  openDrawer("drawer-scene");
+}
+
+function addDialogueRow() {
+  STATE.dialogueRows.push({ characterId: "", line: "" });
+  renderDialogueRows();
+}
+
+function renderDialogueRows() {
+  var box = $("scene-form-dialogue");
+  if (STATE.dialogueRows.length === 0) {
+    box.innerHTML = '<div style="color:var(--ink-faint);font-size:11px;font-style:italic;padding:8px 0;">No dialogue. Tap + Line to add.</div>';
+    return;
+  }
+  var charIds = Object.keys(STATE.characters);
+  var html = "";
+  for (var i = 0; i < STATE.dialogueRows.length; i++) {
+    var d = STATE.dialogueRows[i];
+    var options = '<option value="">- Speaker -</option>';
+    for (var j = 0; j < charIds.length; j++) {
+      var cid = charIds[j];
+      var selected = d.characterId === cid ? " selected" : "";
+      options += '<option value="' + cid + '"' + selected + ">" + esc(STATE.characters[cid].name) + "</option>";
+    }
+    html +=
+      '<div class="dialogue-row">' +
+        '<button type="button" class="remove-dialogue" data-i="' + i + '">&times;</button>' +
+        '<select data-i="' + i + '" class="dialogue-char">' + options + '</select>' +
+        '<textarea data-i="' + i + '" class="dialogue-line" placeholder="What do they say?">' + esc(d.line || "") + '</textarea>' +
+
+```
+  '</div>';
+```
+
+}
+box.innerHTML = html;
+
+var removeBtns = box.querySelectorAll(”.remove-dialogue”);
+for (var k = 0; k < removeBtns.length; k++) {
+(function (btn) {
+btn.onclick = function () {
+var idx = parseInt(btn.getAttribute(“data-i”), 10);
+STATE.dialogueRows.splice(idx, 1);
+renderDialogueRows();
+};
+})(removeBtns[k]);
+}
+var selects = box.querySelectorAll(”.dialogue-char”);
+for (var m = 0; m < selects.length; m++) {
+(function (sel) {
+sel.onchange = function () {
+var idx = parseInt(sel.getAttribute(“data-i”), 10);
+STATE.dialogueRows[idx].characterId = sel.value;
+};
+})(selects[m]);
+}
+var textareas = box.querySelectorAll(”.dialogue-line”);
+for (var n = 0; n < textareas.length; n++) {
+(function (ta) {
+ta.oninput = function () {
+var idx = parseInt(ta.getAttribute(“data-i”), 10);
+STATE.dialogueRows[idx].line = ta.value;
+};
+})(textareas[n]);
+}
+}
+
+function handleSceneSave() {
+var title = $(“scene-form-title”).value.trim();
+var action = $(“scene-form-action”).value.trim();
+if (!title) { toast(“Scene title required”, true); return; }
+if (!action) { toast(“Action description required”, true); return; }
+
+var chipEls = document.querySelectorAll(”#scene-form-characters .chip.active”);
+var selectedCharIds = [];
+for (var i = 0; i < chipEls.length; i++) selectedCharIds.push(chipEls[i].getAttribute(“data-char-id”));
+
+var cleanDialogue = [];
+for (var j = 0; j < STATE.dialogueRows.length; j++) {
+var d = STATE.dialogueRows[j];
+if (d.line && d.line.trim()) {
+cleanDialogue.push({ characterId: d.characterId || null, line: d.line.trim() });
+}
+}
+
+var btn = $(“scene-form-save”);
+btn.disabled = true;
+btn.innerHTML = ‘<span class="loader"></span> Saving…’;
+
+var pid = STATE.projectId;
+var id = STATE.editingId || entityRef(pid, “scenes”).push().key;
+var existingOrder = STATE.scenes[id] && STATE.scenes[id].order;
+var maxOrder = 0;
+var keys = Object.keys(STATE.scenes);
+for (var k = 0; k < keys.length; k++) {
+var o = STATE.scenes[keys[k]].order || 0;
+if (o > maxOrder) maxOrder = o;
+}
+
+var payload = {
+title: title,
+duration: parseInt($(“scene-form-duration”).value, 10) || 8,
+locationId: $(“scene-form-location”).value || null,
+characterIds: selectedCharIds,
+camera: $(“scene-form-camera”).value.trim(),
+action: action,
+reactions: $(“scene-form-reactions”).value.trim(),
+ambient: $(“scene-form-ambient”).value.trim(),
+dialogue: cleanDialogue,
+order: existingOrder != null ? existingOrder : maxOrder + 1,
+updatedAt: Date.now()
+};
+
+entityRef(pid, “scenes”).child(id).update(payload).then(function () {
+STATE.scenes[id] = Object.assign({}, STATE.scenes[id] || {}, payload);
+renderScenes();
+updateCounts();
+closeAllDrawers();
+toast(“Scene saved.”);
+}).catch(function (e) {
+toast(“Save failed: “ + e.message, true);
+}).then(function () {
+btn.disabled = false;
+btn.textContent = “Save Scene”;
+});
+}
+
+function handleSceneDelete() {
+if (!confirm(“Delete this scene?”)) return;
+var id = STATE.editingId;
+entityRef(STATE.projectId, “scenes”).child(id).remove().then(function () {
+delete STATE.scenes[id];
+renderScenes();
+updateCounts();
+closeAllDrawers();
+toast(“Scene deleted.”);
+});
+}
+
+/* ============ PHOTO UPLOAD HANDLERS ============ */
+
+function handlePhotoChange(labelId) {
+return function (e) {
+var f = e.target.files[0];
+if (!f) return;
+STATE.pendingImage = f;
+var reader = new FileReader();
+reader.onload = function () { setUploadPreview(labelId, reader.result); };
+reader.readAsDataURL(f);
+};
+}
+
+/* ============ WIRE UP EVERYTHING ============ */
+
+function wireUp() {
+// Setup screen
+var btnSaveConfig = $(“btn-save-config”);
+if (btnSaveConfig) btnSaveConfig.onclick = handleSaveConfig;
+
+// Auth
+var btnSignin = $(“btn-signin”);
+if (btnSignin) btnSignin.onclick = handleSignIn;
+
+var btnSignout = $(“btn-signout”);
+if (btnSignout) btnSignout.onclick = function () { auth.signOut(); };
+
+// Tabs
+var tabs = document.querySelectorAll(”.tab-btn”);
+for (var i = 0; i < tabs.length; i++) {
+(function (btn) {
+btn.onclick = function () { switchTab(btn.getAttribute(“data-tab”)); };
+})(tabs[i]);
+}
+
+// Add buttons
+var addChar = $(“btn-add-character”);
+if (addChar) addChar.onclick = function () { openCharacterForm(); };
+var addLoc = $(“btn-add-location”);
+if (addLoc) addLoc.onclick = function () { openLocationForm(); };
+var addScene = $(“btn-add-scene”);
+if (addScene) addScene.onclick = function () { openSceneForm(); };
+var addDialogue = $(“btn-add-dialogue”);
+if (addDialogue) addDialogue.onclick = addDialogueRow;
+
+// Save buttons
+$(“project-form-save”).onclick = handleProjectSave;
+$(“char-form-save”).onclick = handleCharacterSave;
+$(“char-form-delete”).onclick = handleCharacterDelete;
+$(“loc-form-save”).onclick = handleLocationSave;
+$(“loc-form-delete”).onclick = handleLocationDelete;
+$(“scene-form-save”).onclick = handleSceneSave;
+$(“scene-form-delete”).onclick = handleSceneDelete;
+
+// Delete project
+var delProj = $(“btn-delete-project”);
+if (delProj) delProj.onclick = deleteCurrentProject;
+
+// Photo uploads
+$(“char-form-photo”).onchange = handlePhotoChange(“char-upload-label”);
+$(“loc-form-photo”).onchange = handlePhotoChange(“loc-upload-label”);
+
+// Close buttons
+var closes = document.querySelectorAll(”[data-close]”);
+for (var j = 0; j < closes.length; j++) closes[j].onclick = closeAllDrawers;
+$(“modal-backdrop”).onclick = closeAllDrawers;
+
+// Keyboard
+document.addEventListener(“keydown”, function (e) {
+if (e.key === “Escape”) closeAllDrawers();
+});
+}
+
+/* ============ START ============ */
+
+wireUp();
+bootstrap();
+
+</script>
+</body>
+</html>
