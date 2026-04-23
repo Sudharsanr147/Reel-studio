@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0a0a0a">
+<title>Reel — Movie Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=IBM+Plex+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+</head>
+<body>
+
+<div id="loading-screen">
+  <div class="loading-inner">
+    <div class="spinner"></div>
+    <div class="loading-text">Loading Reel.</div>
+  </div>
+</div>
+
+<div id="fatal-error" class="hidden">
+  <h2>Startup Error</h2>
+  <p>Something went wrong. Details:</p>
+  <pre id="fatal-error-msg"></pre>
+  <p class="hint">Try reload. If it persists, share this screen.</p>
+</div>
+
+<div id="setup-screen" class="auth-screen hidden">
+  <div class="auth-card wide">
+    <h1 class="display"><em>Setup.</em></h1>
+    <p class="mono-label center">ONE-TIME FIREBASE CONFIG</p>
+    <div class="setup-panel">
+      <h3>Paste your Firebase config</h3>
+      <p>From Firebase Console &rarr; Project Settings &rarr; Your apps &rarr; Web config. Include the whole object with <code>databaseURL</code>.</p>
+      <div class="field">
+        <textarea id="firebase-config-input" placeholder='{ apiKey: "...", authDomain: "...", databaseURL: "https://...firebasedatabase.app", projectId: "...", storageBucket: "...", ... }'></textarea>
+      </div>
+      <button class="btn primary wide-btn" id="btn-save-config">Save Configuration</button>
+    </div>
+  </div>
+</div>
+
+<div id="auth-screen" class="auth-screen hidden">
+  <div class="auth-card">
+    <div class="brand-mark center"><span>R</span></div>
+    <h1 class="display"><em>Reel.</em></h1>
+    <p class="mono-label center">MOVIE STUDIO</p>
+    <p class="muted center">Sign in to build your screenplay. Projects sync to the cloud.</p>
+    <div class="field">
+      <label>Email</label>
+      <input type="text" id="auth-email" autocomplete="email" inputmode="email">
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="auth-password" autocomplete="current-password">
+      <div class="hint">Min 6 chars. Account created on first login.</div>
+    </div>
+    <button class="btn primary wide-btn" id="btn-signin">Sign In / Create Account</button>
+    <p id="auth-error" class="error-text"></p>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark"><span>R</span></div>
+      <div>
+        <div class="brand-name">Reel.</div>
+        <div class="brand-sub">MOVIE STUDIO</div>
+      </div>
+    </div>
+    <nav class="crumb" id="breadcrumb"></nav>
+    <div class="row gap-12">
+      <div class="auth-chip live" id="auth-chip">
+        <div class="dot"></div>
+        <span id="auth-email-display">—</span>
+      </div>
+      <button class="btn ghost tiny" id="btn-signout">Out</button>
+    </div>
+  </header>
+
+  <main>
+    <div id="view-projects">
+      <div class="hero">
+        <span class="mono-label accent">Welcome back</span>
+        <h1 class="display"><em>Build movies</em>, one scene at a time.</h1>
+        <p class="muted">Create a project. Cast your characters. Scout your locations. Write your scenes. Then hand it off to the generator.</p>
+      </div>
+      <div class="section-head">
+        <h2 class="display">Projects</h2>
+        <span class="count" id="projects-count">0 ITEMS</span>
+      </div>
+      <div class="grid" id="projects-grid"></div>
+    </div>
+
+```
+<div id="view-project" class="hidden">
+  <div class="project-header">
+    <span class="mono-label accent" id="project-eyebrow">PROJECT</span>
+    <h1 class="display" id="project-title">Untitled</h1>
+    <div class="meta" id="project-meta"></div>
+  </div>
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="characters">Characters <span class="badge" id="badge-characters">0</span></button>
+    <button class="tab-btn" data-tab="locations">Locations <span class="badge" id="badge-locations">0</span></button>
+    <button class="tab-btn" data-tab="scenes">Scenes <span class="badge" id="badge-scenes">0</span></button>
+    <button class="tab-btn" data-tab="settings">Settings</button>
+  </div>
+
+  <div class="tab-content" id="tab-characters">
+    <div class="row spread mb-20">
+      <span class="mono-label">Cast</span>
+      <button class="btn-add" id="btn-add-character"><span class="plus">+</span> Add Character</button>
+    </div>
+    <div id="characters-list"></div>
+  </div>
+
+  <div class="tab-content hidden" id="tab-locations">
+    <div class="row spread mb-20">
+      <span class="mono-label">Sets</span>
+      <button class="btn-add" id="btn-add-location"><span class="plus">+</span> Add Location</button>
+    </div>
+    <div id="locations-list"></div>
+  </div>
+
+  <div class="tab-content hidden" id="tab-scenes">
+    <div class="row spread mb-20">
+      <span class="mono-label">Screenplay</span>
+      <button class="btn-add" id="btn-add-scene"><span class="plus">+</span> Add Scene</button>
+    </div>
+    <div id="scenes-list"></div>
+  </div>
+
+  <div class="tab-content hidden" id="tab-settings">
+    <div class="entity-card static">
+      <h4>Danger Zone</h4>
+      <p class="muted small">Deleting this project removes all characters, locations, and scenes. Cannot be undone.</p>
+      <button class="btn danger" id="btn-delete-project">Delete Project</button>
+    </div>
+  </div>
+</div>
+```
+
+  </main>
+</div>
+
+<div class="modal-backdrop" id="modal-backdrop"></div>
+
+<aside class="drawer" id="drawer-project">
+  <div class="drawer-head">
+    <div>
+      <div class="mono-label accent">Project</div>
+      <h3 id="drawer-project-title">New Project</h3>
+    </div>
+    <button class="drawer-close" data-close>&times;</button>
+  </div>
+  <div class="drawer-body">
+    <div class="field">
+      <label>Title <span class="req">*</span></label>
+      <input type="text" id="project-form-title">
+    </div>
+    <div class="field">
+      <label>Logline</label>
+      <textarea id="project-form-logline"></textarea>
+    </div>
+    <div class="field">
+      <label>Genre / Tone</label>
+      <input type="text" id="project-form-genre">
+    </div>
+  </div>
+  <div class="drawer-foot">
+    <button class="btn ghost" data-close>Cancel</button>
+    <button class="btn primary" id="project-form-save">Save Project</button>
+  </div>
+</aside>
+
+<aside class="drawer" id="drawer-character">
+  <div class="drawer-head">
+    <div>
+      <div class="mono-label accent">Character</div>
+      <h3 id="drawer-character-title">New Character</h3>
+    </div>
+    <button class="drawer-close" data-close>&times;</button>
+  </div>
+  <div class="drawer-body">
+    <div class="field">
+      <label>Name <span class="req">*</span></label>
+      <input type="text" id="char-form-name">
+    </div>
+    <div class="field">
+      <label>Reference Photo</label>
+      <label class="img-upload" id="char-upload-label">
+        <input type="file" accept="image/*" id="char-form-photo">
+        <div class="upload-prompt">
+          <span class="icon">+</span>
+          <span>Upload Reference</span>
+        </div>
+        <div class="change-overlay">Tap to change</div>
+      </label>
+    </div>
+    <div class="field">
+      <label>Physical Description</label>
+      <textarea id="char-form-appearance"></textarea>
+    </div>
+    <div class="field">
+      <label>Personality / How They Act</label>
+      <textarea id="char-form-personality"></textarea>
+    </div>
+    <div class="field">
+      <label>Voice / Accent</label>
+      <input type="text" id="char-form-voice">
+    </div>
+  </div>
+  <div class="drawer-foot">
+    <button class="btn danger hidden" id="char-form-delete">Delete</button>
+    <div class="row gap-12 ml-auto">
+      <button class="btn ghost" data-close>Cancel</button>
+      <button class="btn primary" id="char-form-save">Save Character</button>
+    </div>
+  </div>
+</aside>
+
+<aside class="drawer" id="drawer-location">
+  <div class="drawer-head">
+    <div>
+      <div class="mono-label accent">Location</div>
+      <h3 id="drawer-location-title">New Location</h3>
+    </div>
+    <button class="drawer-close" data-close>&times;</button>
+  </div>
+  <div class="drawer-body">
+    <div class="field">
+      <label>Name <span class="req">*</span></label>
+      <input type="text" id="loc-form-name">
+    </div>
+    <div class="field">
+      <label>Reference Photo</label>
+      <label class="img-upload" id="loc-upload-label">
+        <input type="file" accept="image/*" id="loc-form-photo">
+        <div class="upload-prompt">
+          <span class="icon">+</span>
+          <span>Upload Reference</span>
+        </div>
+        <div class="change-overlay">Tap to change</div>
+      </label>
+    </div>
+    <div class="field">
+      <label>Description</label>
+      <textarea id="loc-form-description"></textarea>
+    </div>
+    <div class="field">
+      <label>Atmosphere / Mood</label>
+      <input type="text" id="loc-form-mood">
+    </div>
+    <div class="field">
+      <label>Time of Day</label>
+      <select id="loc-form-timeofday">
+        <option value="">—</option>
+        <option>Dawn</option>
+        <option>Morning</option>
+        <option>Midday</option>
+        <option>Afternoon</option>
+        <option>Golden Hour</option>
+        <option>Dusk</option>
+        <option>Night</option>
+        <option>Late Night</option>
+      </select>
+    </div>
+  </div>
+  <div class="drawer-foot">
+    <button class="btn danger hidden" id="loc-form-delete">Delete</button>
+    <div class="row gap-12 ml-auto">
+      <button class="btn ghost" data-close>Cancel</button>
+      <button class="btn primary" id="loc-form-save">Save Location</button>
+    </div>
+  </div>
+</aside>
+
+<aside class="drawer" id="drawer-scene">
+  <div class="drawer-head">
+    <div>
+      <div class="mono-label accent" id="scene-form-number">Scene</div>
+      <h3 id="drawer-scene-title">New Scene</h3>
+    </div>
+    <button class="drawer-close" data-close>&times;</button>
+  </div>
+  <div class="drawer-body">
+    <div class="field">
+      <label>Scene Title <span class="req">*</span></label>
+      <input type="text" id="scene-form-title">
+    </div>
+    <div class="row gap-16">
+      <div class="field flex1">
+        <label>Duration (sec)</label>
+        <input type="number" id="scene-form-duration" min="2" max="30" value="8">
+      </div>
+      <div class="field flex1">
+        <label>Location</label>
+        <select id="scene-form-location"><option value="">— Select —</option></select>
+      </div>
+    </div>
+    <div class="field">
+      <label>Characters in Scene</label>
+      <div class="chip-select" id="scene-form-characters"></div>
+    </div>
+    <div class="field">
+      <label>Camera / Shot</label>
+      <input type="text" id="scene-form-camera">
+    </div>
+    <div class="field">
+      <label>Action / What Happens <span class="req">*</span></label>
+      <textarea id="scene-form-action"></textarea>
+    </div>
+    <div class="field">
+      <label>Character Reactions / Emotions</label>
+      <textarea id="scene-form-reactions"></textarea>
+    </div>
+    <div class="field">
+      <label>Ambient Details</label>
+      <textarea id="scene-form-ambient"></textarea>
+    </div>
+    <div class="field">
+      <label class="row spread mb-10">
+        <span class="sublabel">Dialogue</span>
+        <button class="btn-add tiny" type="button" id="btn-add-dialogue"><span class="plus">+</span> Line</button>
+      </label>
+      <div id="scene-form-dialogue"></div>
+    </div>
+  </div>
+  <div class="drawer-foot">
+    <button class="btn danger hidden" id="scene-form-delete">Delete</button>
+    <div class="row gap-12 ml-auto">
+      <button class="btn ghost" data-close>Cancel</button>
+      <button class="btn primary" id="scene-form-save">Save Scene</button>
+    </div>
+  </div>
+</aside>
+
+<div class="toast" id="toast">Saved.</div>
+
+<script>
+window.addEventListener('error', function(e) {
+  var el = document.getElementById('fatal-error');
+  var msg = document.getElementById('fatal-error-msg');
+  if (el && msg) {
+    el.classList.remove('hidden');
+    msg.textContent = (e.message || 'Error') + '\nFile: ' + (e.filename || '?') + '\nLine: ' + (e.lineno || '?') + '\n\n' + (e.error && e.error.stack ? e.error.stack : '');
+  }
+});
+</script>
+
+<script src="app.js"></script>
+
+</body>
+</html>
