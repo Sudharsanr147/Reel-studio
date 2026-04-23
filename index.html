@@ -1344,12 +1344,12 @@ padding-right: 20px;
 <div class="toast" id="toast">Saved.</div>
 
 <script>
-window.addEventListener(`error`, function(e) {
-  var el = document.getElementById(`fatal-error`);
-  var msg = document.getElementById(`fatal-error-msg`);
+window.addEventListener('error', function(e) {
+  var el = document.getElementById('fatal-error');
+  var msg = document.getElementById('fatal-error-msg');
   if (el && msg) {
-    el.classList.remove(`hidden`);
-    msg.textContent = (e.message || `Error`) + `\nFile: ` + (e.filename || `?`) + `\nLine: ` + (e.lineno || `?`) + `\n\n` + (e.error && e.error.stack ? e.error.stack : ``);
+    el.classList.remove('hidden');
+    msg.textContent = (e.message || 'Error') + '\nFile: ' + (e.filename || '?') + '\nLine: ' + (e.lineno || '?') + '\n\n' + (e.error && e.error.stack ? e.error.stack : '');
   }
 });
 </script>
@@ -1374,63 +1374,63 @@ var db = null;
 var storage = null;
 var auth = null;
 
-var CONFIG_KEY = `reel_firebase_config`;
+var CONFIG_KEY = 'reel_firebase_config';
 
 /* ============ HELPERS ============ */
 
 function $(id) { return document.getElementById(id); }
 
 function esc(s) {
-  if (s == null) return ``;
+  if (s == null) return '';
   return String(s)
-    .split(`&`).join(`&amp;`)
-    .split(`<`).join(`&lt;`)
-    .split(`>`).join(`&gt;`)
-    .split(`\x22`).join(`&quot;`)
-    .split(`\x27`).join(`&#39;`);
+    .split('&').join('&amp;')
+    .split('<').join('&lt;')
+    .split('>').join('&gt;')
+    .split('\x22').join('&quot;')
+    .split('\x27').join('&#39;');
 }
 
 function toast(msg, isError) {
-  var el = $(`toast`);
+  var el = $('toast');
   el.textContent = msg;
-  if (isError) el.classList.add(`error`);
-  else el.classList.remove(`error`);
-  el.classList.add(`show`);
-  setTimeout(function () { el.classList.remove(`show`); }, 2400);
+  if (isError) el.classList.add('error');
+  else el.classList.remove('error');
+  el.classList.add('show');
+  setTimeout(function () { el.classList.remove('show'); }, 2400);
 }
 
 function showScreen(id) {
-  var loading = $(`loading-screen`);
-  if (loading) loading.style.display = `none`;
-  [`auth-screen`, `setup-screen`, `app`].forEach(function (s) {
+  var loading = $('loading-screen');
+  if (loading) loading.style.display = 'none';
+  ['auth-screen', 'setup-screen', 'app'].forEach(function (s) {
     var el = $(s);
-    if (s === id) el.classList.remove(`hidden`);
-    else el.classList.add(`hidden`);
+    if (s === id) el.classList.remove('hidden');
+    else el.classList.add('hidden');
   });
 }
 
 function openDrawer(id) {
-  $(`modal-backdrop`).classList.add(`open`);
-  $(id).classList.add(`open`);
-  document.body.style.overflow = `hidden`;
+  $('modal-backdrop').classList.add('open');
+  $(id).classList.add('open');
+  document.body.style.overflow = 'hidden';
 }
 
 function closeAllDrawers() {
-  $(`modal-backdrop`).classList.remove(`open`);
-  var drawers = document.querySelectorAll(`.drawer`);
-  for (var i = 0; i < drawers.length; i++) drawers[i].classList.remove(`open`);
-  document.body.style.overflow = ``;
+  $('modal-backdrop').classList.remove('open');
+  var drawers = document.querySelectorAll('.drawer');
+  for (var i = 0; i < drawers.length; i++) drawers[i].classList.remove('open');
+  document.body.style.overflow = '';
   STATE.pendingImage = null;
 }
 
 function setUploadPreview(labelId, url) {
   var el = $(labelId);
   if (url) {
-    el.classList.add(`has-image`);
-    el.style.backgroundImage = `url(\x27` + url + `\x27)`;
+    el.classList.add('has-image');
+    el.style.backgroundImage = 'url(\x27' + url + '\x27)';
   } else {
-    el.classList.remove(`has-image`);
-    el.style.backgroundImage = ``;
+    el.classList.remove('has-image');
+    el.style.backgroundImage = '';
   }
 }
 
@@ -1444,7 +1444,7 @@ function initFirebase(config) {
     storage = firebase.storage();
     return true;
   } catch (e) {
-    console.error(`Firebase init failed:`, e);
+    console.error('Firebase init failed:', e);
     return false;
   }
 }
@@ -1452,49 +1452,49 @@ function initFirebase(config) {
 function bootstrap() {
   var stored = localStorage.getItem(CONFIG_KEY);
   if (!stored) {
-    showScreen(`setup-screen`);
+    showScreen('setup-screen');
     return;
   }
   try {
     var config = JSON.parse(stored);
     if (!initFirebase(config)) {
-      showScreen(`setup-screen`);
+      showScreen('setup-screen');
       return;
     }
     auth.onAuthStateChanged(function (user) {
       if (user) {
         STATE.user = user;
-        $(`auth-email-display`).textContent = user.email;
-        showScreen(`app`);
+        $('auth-email-display').textContent = user.email;
+        showScreen('app');
         loadProjects();
       } else {
-        showScreen(`auth-screen`);
+        showScreen('auth-screen');
       }
     });
   } catch (e) {
     console.error(e);
-    showScreen(`setup-screen`);
+    showScreen('setup-screen');
   }
 }
 
 /* ============ SETUP SCREEN ============ */
 
 function handleSaveConfig() {
-  var raw = $(`firebase-config-input`).value.trim();
+  var raw = $('firebase-config-input').value.trim();
   var config;
   try {
-    if (raw.charAt(0) !== `{`) throw new Error(`Must start with {`);
+    if (raw.charAt(0) !== '{') throw new Error('Must start with {');
     var jsonStr = raw
-      .replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, `$1\x22$2\x22:`)
-      .replace(/\x27/g, `\x22`)
-      .replace(/,(\s*[}\]])/g, `$1`);
+      .replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1\x22$2\x22:')
+      .replace(/\x27/g, '\x22')
+      .replace(/,(\s*[}\]])/g, '$1');
     config = JSON.parse(jsonStr);
   } catch (e) {
-    toast(`Invalid config. Paste the full firebaseConfig object.`, true);
+    toast('Invalid config. Paste the full firebaseConfig object.', true);
     return;
   }
   if (!config.apiKey || !config.databaseURL) {
-    toast(`Config must include apiKey and databaseURL`, true);
+    toast('Config must include apiKey and databaseURL', true);
     return;
   }
   localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
@@ -1504,17 +1504,17 @@ function handleSaveConfig() {
 /* ============ AUTH ============ */
 
 function handleSignIn() {
-  var email = $(`auth-email`).value.trim();
-  var password = $(`auth-password`).value;
-  var errEl = $(`auth-error`);
-  errEl.textContent = ``;
+  var email = $('auth-email').value.trim();
+  var password = $('auth-password').value;
+  var errEl = $('auth-error');
+  errEl.textContent = '';
   if (!email || !password) {
-    errEl.textContent = `Email and password required.`;
+    errEl.textContent = 'Email and password required.';
     return;
   }
   auth.signInWithEmailAndPassword(email, password).catch(function (e) {
-    var code = e.code || ``;
-    if (code === `auth/user-not-found` || code === `auth/invalid-login-credentials` || code === `auth/invalid-credential`) {
+    var code = e.code || '';
+    if (code === 'auth/user-not-found' || code === 'auth/invalid-login-credentials' || code === 'auth/invalid-credential') {
       auth.createUserWithEmailAndPassword(email, password).catch(function (e2) {
         errEl.textContent = e2.message;
       });
@@ -1529,22 +1529,22 @@ function handleSignIn() {
 function navigateHome() {
   STATE.projectId = null;
   STATE.project = null;
-  $(`view-project`).classList.add(`hidden`);
-  $(`view-projects`).classList.remove(`hidden`);
+  $('view-project').classList.add('hidden');
+  $('view-projects').classList.remove('hidden');
   renderBreadcrumb();
   loadProjects();
 }
 
 function renderBreadcrumb() {
-  var bc = $(`breadcrumb`);
+  var bc = $('breadcrumb');
   if (!STATE.project) {
-    bc.innerHTML = `<span class=\x22current\x22>All Projects</span>`;
+    bc.innerHTML = '<span class=\x22current\x22>All Projects</span>';
   } else {
     bc.innerHTML =
-      `<button id=\x22crumb-home\x22>Projects</button>` +
-      `<span class=\x22sep\x22>/</span>` +
-      `<span class=\x22current\x22>` + esc(STATE.project.title) + `</span>`;
-    var homeBtn = $(`crumb-home`);
+      '<button id=\x22crumb-home\x22>Projects</button>' +
+      '<span class=\x22sep\x22>/</span>' +
+      '<span class=\x22current\x22>' + esc(STATE.project.title) + '</span>';
+    var homeBtn = $('crumb-home');
     if (homeBtn) homeBtn.onclick = navigateHome;
   }
 }
@@ -1552,15 +1552,15 @@ function renderBreadcrumb() {
 /* ============ DB REFS ============ */
 
 function uid() { return STATE.user.uid; }
-function projectsRef() { return db.ref(`users/` + uid() + `/projects`); }
-function projectRef(pid) { return db.ref(`users/` + uid() + `/projects/` + pid); }
-function entityRef(pid, type) { return db.ref(`users/` + uid() + `/data/` + pid + `/` + type); }
+function projectsRef() { return db.ref('users/' + uid() + '/projects'); }
+function projectRef(pid) { return db.ref('users/' + uid() + '/projects/' + pid); }
+function entityRef(pid, type) { return db.ref('users/' + uid() + '/data/' + pid + '/' + type); }
 
 /* ============ PROJECTS LIST ============ */
 
 function loadProjects() {
-  var grid = $(`projects-grid`);
-  projectsRef().once(`value`).then(function (snap) {
+  var grid = $('projects-grid');
+  projectsRef().once('value').then(function (snap) {
     var data = snap.val() || {};
     var entries = Object.keys(data).map(function (k) {
       return [k, data[k]];
@@ -1568,72 +1568,72 @@ function loadProjects() {
     entries.sort(function (a, b) {
       return (b[1].updatedAt || 0) - (a[1].updatedAt || 0);
     });
-    $(`projects-count`).textContent = entries.length + ` ITEM` + (entries.length === 1 ? `` : `S`);
+    $('projects-count').textContent = entries.length + ' ITEM' + (entries.length === 1 ? '' : 'S');
 
-    var html = ``;
+    var html = '';
     for (var i = 0; i < entries.length; i++) {
       var id = entries[i][0];
       var p = entries[i][1];
       var counts = p.counts || {};
       html +=
-        `<button class=\x22project-card\x22 data-project-id=\x22` + id + `\x22>` +
-          `<span class=\x22tag\x22>` + esc(p.genre || `UNTITLED GENRE`) + `</span>` +
-          `<h3>` + esc(p.title) + `</h3>` +
-          `<p class=\x22logline\x22>` + esc(p.logline || `No logline yet.`) + `</p>` +
-          `<div class=\x22stats\x22>` +
-            `<span><strong>` + (counts.characters || 0) + `</strong>Cast</span>` +
-            `<span><strong>` + (counts.locations || 0) + `</strong>Sets</span>` +
-            `<span><strong>` + (counts.scenes || 0) + `</strong>Scenes</span>` +
-          `</div>` +
-        `</button>`;
+        '<button class=\x22project-card\x22 data-project-id=\x22' + id + '\x22>' +
+          '<span class=\x22tag\x22>' + esc(p.genre || 'UNTITLED GENRE') + '</span>' +
+          '<h3>' + esc(p.title) + '</h3>' +
+          '<p class=\x22logline\x22>' + esc(p.logline || 'No logline yet.') + '</p>' +
+          '<div class=\x22stats\x22>' +
+            '<span><strong>' + (counts.characters || 0) + '</strong>Cast</span>' +
+            '<span><strong>' + (counts.locations || 0) + '</strong>Sets</span>' +
+            '<span><strong>' + (counts.scenes || 0) + '</strong>Scenes</span>' +
+          '</div>' +
+        '</button>';
     }
     html +=
-      `<button class=\x22new-project-card\x22 id=\x22btn-new-project\x22>` +
-        `<div class=\x22plus-big\x22>+</div>` +
-        `<span>New Project</span>` +
-      `</button>`;
+      '<button class=\x22new-project-card\x22 id=\x22btn-new-project\x22>' +
+        '<div class=\x22plus-big\x22>+</div>' +
+        '<span>New Project</span>' +
+      '</button>';
 
     grid.innerHTML = html;
 
-    var cards = grid.querySelectorAll(`.project-card`);
+    var cards = grid.querySelectorAll('.project-card');
     for (var j = 0; j < cards.length; j++) {
       (function (card) {
-        card.onclick = function () { openProject(card.getAttribute(`data-project-id`)); };
+        card.onclick = function () { openProject(card.getAttribute('data-project-id')); };
       })(cards[j]);
     }
-    $(`btn-new-project`).onclick = function () { openProjectForm(); };
+    $('btn-new-project').onclick = function () { openProjectForm(); };
   });
 }
 
 function openProjectForm(projectId) {
   STATE.editingId = projectId || null;
-  var p = projectId ? STATE.project : { title: ``, logline: ``, genre: `` };
-  $(`drawer-project-title`).textContent = projectId ? `Edit Project` : `New Project`;
-  $(`project-form-title`).value = p.title || ``;
-  $(`project-form-logline`).value = p.logline || ``;
-  $(`project-form-genre`).value = p.genre || ``;
-  openDrawer(`drawer-project`);
+  var p = projectId ? STATE.project : { title: '', logline: '', genre: '' };
+  $('drawer-project-title').textContent = projectId ? 'Edit Project' : 'New Project';
+  $('project-form-title').value = p.title || '';
+  $('project-form-logline').value = p.logline || '';
+  $('project-form-genre').value = p.genre || '';
+  openDrawer('drawer-project');
 }
 
 function handleProjectSave() {
-  var title = $(`project-form-title`).value.trim();
-  if (!title) { toast(`Title is required`, true); return; }
+  var title = $('project-form-title').value.trim();
+  if (!title) { toast('Title is required', true); return; }
   var payload = {
     title: title,
-    logline: $(`project-form-logline`).value.trim(),
-    genre: $(`project-form-genre`).value.trim(),
+    logline: $('project-form-logline').value.trim(),
+    genre: $('project-form-genre').value.trim(),
     updatedAt: Date.now()
   };
 
   if (STATE.editingId) {
     projectRef(STATE.editingId).update(payload).then(function () {
       STATE.project = Object.assign({}, STATE.project, payload);
-      $(`project-title`).textContent = title;
-      $(`project-eyebrow`).textContent = payload.genre || `PROJECT`;
+      $('project-title').textContent = title;
+      $('project-eyebrow').textContent = payload.genre || 'PROJECT';
       renderBreadcrumb();
       closeAllDrawers();
-      toast(`Project saved.`);
-    }).catch(function (e) { toast(`Save failed: ` + e.message, true); });
+      toast('Project saved.');
+    }).catch(function (e) { toast('Save failed: ' + e.message, true); });
   } else {
     payload.createdAt = Date.now();
     payload.counts = { characters: 0, locations: 0, scenes: 0 };
@@ -1642,60 +1642,60 @@ function handleProjectSave() {
       STATE.projectId = ref.key;
       openProject(ref.key);
       closeAllDrawers();
-      toast(`Project created.`);
-    }).catch(function (e) { toast(`Save failed: ` + e.message, true); });
+      toast('Project created.');
+    }).catch(function (e) { toast('Save failed: ' + e.message, true); });
   }
 }
 
 function openProject(projectId) {
   STATE.projectId = projectId;
-  projectRef(projectId).once(`value`).then(function (snap) {
+  projectRef(projectId).once('value').then(function (snap) {
     STATE.project = snap.val();
-    if (!STATE.project) { toast(`Project not found`, true); return; }
+    if (!STATE.project) { toast('Project not found', true); return; }
 
-    $(`view-projects`).classList.add(`hidden`);
-    $(`view-project`).classList.remove(`hidden`);
-    $(`project-title`).textContent = STATE.project.title;
-    $(`project-eyebrow`).textContent = STATE.project.genre || `PROJECT`;
+    $('view-projects').classList.add('hidden');
+    $('view-project').classList.remove('hidden');
+    $('project-title').textContent = STATE.project.title;
+    $('project-eyebrow').textContent = STATE.project.genre || 'PROJECT';
 
     var createdDate = STATE.project.createdAt
-      ? new Date(STATE.project.createdAt).toLocaleDateString(`en-GB`, { day: `2-digit`, month: `short`, year: `numeric` })
-      : `\u2014`;
-    var metaHtml = `<span>Created ` + createdDate + `</span>`;
+      ? new Date(STATE.project.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+      : '\u2014';
+    var metaHtml = '<span>Created ' + createdDate + '</span>';
     if (STATE.project.logline) {
-      metaHtml += `<span style=\x22font-style:italic;font-family:Fraunces,serif;text-transform:none;letter-spacing:0;\x22>` +
-        esc(STATE.project.logline) + `</span>`;
+      metaHtml += '<span style=\x22font-style:italic;font-family:Fraunces,serif;text-transform:none;letter-spacing:0;\x22>' +
+        esc(STATE.project.logline) + '</span>';
     }
-    $(`project-meta`).innerHTML = metaHtml;
+    $('project-meta').innerHTML = metaHtml;
 
     renderBreadcrumb();
-    switchTab(`characters`);
+    switchTab('characters');
     loadEntities();
   });
 }
 
 function deleteCurrentProject() {
-  if (!confirm(`Delete project \x22` + STATE.project.title + `\x22 and all its data? This cannot be undone.`)) return;
+  if (!confirm('Delete project \x22' + STATE.project.title + '\x22 and all its data? This cannot be undone.')) return;
   var pid = STATE.projectId;
   projectRef(pid).remove().then(function () {
-    return db.ref(`users/` + uid() + `/data/` + pid).remove();
+    return db.ref('users/' + uid() + '/data/' + pid).remove();
   }).then(function () {
-    toast(`Project deleted.`);
+    toast('Project deleted.');
     navigateHome();
-  }).catch(function (e) { toast(`Delete failed: ` + e.message, true); });
+  }).catch(function (e) { toast('Delete failed: ' + e.message, true); });
 }
 
 /* ============ TABS ============ */
 
 function switchTab(name) {
-  var btns = document.querySelectorAll(`.tab-btn`);
+  var btns = document.querySelectorAll('.tab-btn');
   for (var i = 0; i < btns.length; i++) {
-    if (btns[i].getAttribute(`data-tab`) === name) btns[i].classList.add(`active`);
-    else btns[i].classList.remove(`active`);
+    if (btns[i].getAttribute('data-tab') === name) btns[i].classList.add('active');
+    else btns[i].classList.remove('active');
   }
-  var contents = document.querySelectorAll(`.tab-content`);
-  for (var j = 0; j < contents.length; j++) contents[j].classList.add(`hidden`);
-  $(`tab-` + name).classList.remove(`hidden`);
+  var contents = document.querySelectorAll('.tab-content');
+  for (var j = 0; j < contents.length; j++) contents[j].classList.add('hidden');
+  $('tab-' + name).classList.remove('hidden');
 }
 
 /* ============ LOAD ENTITIES ============ */
@@ -1703,9 +1703,9 @@ function switchTab(name) {
 function loadEntities() {
   var pid = STATE.projectId;
   Promise.all([
-    entityRef(pid, `characters`).once(`value`),
-    entityRef(pid, `locations`).once(`value`),
-    entityRef(pid, `scenes`).once(`value`)
+    entityRef(pid, 'characters').once('value'),
+    entityRef(pid, 'locations').once('value'),
+    entityRef(pid, 'scenes').once('value')
   ]).then(function (results) {
     STATE.characters = results[0].val() || {};
     STATE.locations = results[1].val() || {};
@@ -1721,47 +1721,47 @@ function updateCounts() {
   var c = Object.keys(STATE.characters).length;
   var l = Object.keys(STATE.locations).length;
   var s = Object.keys(STATE.scenes).length;
-  $(`badge-characters`).textContent = c;
-  $(`badge-locations`).textContent = l;
-  $(`badge-scenes`).textContent = s;
+  $('badge-characters').textContent = c;
+  $('badge-locations').textContent = l;
+  $('badge-scenes').textContent = s;
   projectRef(STATE.projectId).update({ counts: { characters: c, locations: l, scenes: s } });
 }
 
 /* ============ CHARACTERS ============ */
 
 function renderCharacters() {
-  var list = $(`characters-list`);
+  var list = $('characters-list');
   var ids = Object.keys(STATE.characters);
   if (ids.length === 0) {
     list.innerHTML =
-      `<div class=\x22empty-state\x22>` +
-        `<h3>Cast the film.</h3>` +
-        `<p>Add each character once - name, description, personality, reference photo. Reference them by name in every scene.</p>` +
-        `<button class=\x22btn primary\x22 id=\x22btn-first-char\x22>Add First Character</button>` +
-      `</div>`;
-    $(`btn-first-char`).onclick = function () { openCharacterForm(); };
+      '<div class=\x22empty-state\x22>' +
+        '<h3>Cast the film.</h3>' +
+        '<p>Add each character once - name, description, personality, reference photo. Reference them by name in every scene.</p>' +
+        '<button class=\x22btn primary\x22 id=\x22btn-first-char\x22>Add First Character</button>' +
+      '</div>';
+    $('btn-first-char').onclick = function () { openCharacterForm(); };
     return;
   }
-  var html = ``;
+  var html = '';
   for (var i = 0; i < ids.length; i++) {
     var id = ids[i];
     var c = STATE.characters[id];
-    var thumbStyle = c.photoUrl ? ` style=\x22background-image:url(\x27` + esc(c.photoUrl) + `\x27)\x22` : ``;
-    var thumbClass = c.photoUrl ? `thumb` : `thumb empty`;
+    var thumbStyle = c.photoUrl ? ' style=\x22background-image:url(\x27' + esc(c.photoUrl) + '\x27)\x22' : '';
+    var thumbClass = c.photoUrl ? 'thumb' : 'thumb empty';
     html +=
-      `<button class=\x22entity-card\x22 data-char-id=\x22` + id + `\x22>` +
-        `<div class=\x22` + thumbClass + `\x22` + thumbStyle + `></div>` +
-        `<div class=\x22body\x22>` +
-          `<h4>` + esc(c.name) + `</h4>` +
-          `<div class=\x22desc\x22>` + esc(c.appearance || c.personality || `No description.`) + `</div>` +
-        `</div>` +
-      `</button>`;
+      '<button class=\x22entity-card\x22 data-char-id=\x22' + id + '\x22>' +
+        '<div class=\x22' + thumbClass + '\x22' + thumbStyle + '></div>' +
+        '<div class=\x22body\x22>' +
+          '<h4>' + esc(c.name) + '</h4>' +
+          '<div class=\x22desc\x22>' + esc(c.appearance || c.personality || 'No description.') + '</div>' +
+        '</div>' +
+      '</button>';
   }
   list.innerHTML = html;
-  var cards = list.querySelectorAll(`[data-char-id]`);
+  var cards = list.querySelectorAll('[data-char-id]');
   for (var j = 0; j < cards.length; j++) {
     (function (card) {
-      card.onclick = function () { openCharacterForm(card.getAttribute(`data-char-id`)); };
+      card.onclick = function () { openCharacterForm(card.getAttribute('data-char-id')); };
     })(cards[j]);
   }
 }
@@ -1770,31 +1770,31 @@ function openCharacterForm(characterId) {
   STATE.editingId = characterId || null;
   STATE.pendingImage = null;
   var c = characterId ? STATE.characters[characterId] : {};
-  $(`drawer-character-title`).textContent = characterId ? `Edit Character` : `New Character`;
-  $(`char-form-name`).value = c.name || ``;
-  $(`char-form-appearance`).value = c.appearance || ``;
-  $(`char-form-personality`).value = c.personality || ``;
-  $(`char-form-voice`).value = c.voice || ``;
-  setUploadPreview(`char-upload-label`, c.photoUrl || null);
-  if (characterId) $(`char-form-delete`).classList.remove(`hidden`);
-  else $(`char-form-delete`).classList.add(`hidden`);
-  openDrawer(`drawer-character`);
+  $('drawer-character-title').textContent = characterId ? 'Edit Character' : 'New Character';
+  $('char-form-name').value = c.name || '';
+  $('char-form-appearance').value = c.appearance || '';
+  $('char-form-personality').value = c.personality || '';
+  $('char-form-voice').value = c.voice || '';
+  setUploadPreview('char-upload-label', c.photoUrl || null);
+  if (characterId) $('char-form-delete').classList.remove('hidden');
+  else $('char-form-delete').classList.add('hidden');
+  openDrawer('drawer-character');
 }
 
 function handleCharacterSave() {
-  var name = $(`char-form-name`).value.trim();
-  if (!name) { toast(`Name required`, true); return; }
-  var btn = $(`char-form-save`);
+  var name = $('char-form-name').value.trim();
+  if (!name) { toast('Name required', true); return; }
+  var btn = $('char-form-save');
   btn.disabled = true;
-  btn.innerHTML = `<span class=\x22loader\x22></span> Saving...`;
+  btn.innerHTML = '<span class=\x22loader\x22></span> Saving...';
 
   var pid = STATE.projectId;
-  var id = STATE.editingId || entityRef(pid, `characters`).push().key;
+  var id = STATE.editingId || entityRef(pid, 'characters').push().key;
   var photoUrl = (STATE.characters[id] && STATE.characters[id].photoUrl) || null;
 
   var uploadPromise;
   if (STATE.pendingImage) {
-    var path = `users/` + uid() + `/data/` + pid + `/characters/` + id + `.jpg`;
+    var path = 'users/' + uid() + '/data/' + pid + '/characters/' + id + '.jpg';
     var ref = storage.ref(path);
     uploadPromise = ref.put(STATE.pendingImage).then(function () { return ref.getDownloadURL(); }).then(function (url) { photoUrl = url; });
   } else {
@@ -1804,74 +1804,74 @@ function handleCharacterSave() {
   uploadPromise.then(function () {
     var payload = {
       name: name,
-      appearance: $(`char-form-appearance`).value.trim(),
-      personality: $(`char-form-personality`).value.trim(),
-      voice: $(`char-form-voice`).value.trim(),
+      appearance: $('char-form-appearance').value.trim(),
+      personality: $('char-form-personality').value.trim(),
+      voice: $('char-form-voice').value.trim(),
       photoUrl: photoUrl,
       updatedAt: Date.now()
     };
-    return entityRef(pid, `characters`).child(id).update(payload).then(function () {
+    return entityRef(pid, 'characters').child(id).update(payload).then(function () {
       STATE.characters[id] = Object.assign({}, STATE.characters[id] || {}, payload);
       renderCharacters();
       updateCounts();
       closeAllDrawers();
-      toast(`Character saved.`);
+      toast('Character saved.');
     });
   }).catch(function (e) {
-    toast(`Save failed: ` + e.message, true);
+    toast('Save failed: ' + e.message, true);
   }).then(function () {
     btn.disabled = false;
-    btn.textContent = `Save Character`;
+    btn.textContent = 'Save Character';
   });
 }
 
 function handleCharacterDelete() {
-  if (!confirm(`Delete this character?`)) return;
+  if (!confirm('Delete this character?')) return;
   var id = STATE.editingId;
-  entityRef(STATE.projectId, `characters`).child(id).remove().then(function () {
+  entityRef(STATE.projectId, 'characters').child(id).remove().then(function () {
     delete STATE.characters[id];
     renderCharacters();
     updateCounts();
     closeAllDrawers();
-    toast(`Character deleted.`);
+    toast('Character deleted.');
   });
 }
 
 /* ============ LOCATIONS ============ */
 
 function renderLocations() {
-  var list = $(`locations-list`);
+  var list = $('locations-list');
   var ids = Object.keys(STATE.locations);
   if (ids.length === 0) {
     list.innerHTML =
-      `<div class=\x22empty-state\x22>` +
-        `<h3>Scout your sets.</h3>` +
-        `<p>Define each location once. Scenes reuse them, so the visual language stays consistent.</p>` +
-        `<button class=\x22btn primary\x22 id=\x22btn-first-loc\x22>Add First Location</button>` +
-      `</div>`;
-    $(`btn-first-loc`).onclick = function () { openLocationForm(); };
+      '<div class=\x22empty-state\x22>' +
+        '<h3>Scout your sets.</h3>' +
+        '<p>Define each location once. Scenes reuse them, so the visual language stays consistent.</p>' +
+        '<button class=\x22btn primary\x22 id=\x22btn-first-loc\x22>Add First Location</button>' +
+      '</div>';
+    $('btn-first-loc').onclick = function () { openLocationForm(); };
     return;
   }
-  var html = ``;
+  var html = '';
   for (var i = 0; i < ids.length; i++) {
     var id = ids[i];
     var l = STATE.locations[id];
-    var thumbStyle = l.photoUrl ? ` style=\x22background-image:url(\x27` + esc(l.photoUrl) + `\x27)\x22` : ``;
-    var thumbClass = l.photoUrl ? `thumb` : `thumb empty`;
+    var thumbStyle = l.photoUrl ? ' style=\x22background-image:url(\x27' + esc(l.photoUrl) + '\x27)\x22' : '';
+    var thumbClass = l.photoUrl ? 'thumb' : 'thumb empty';
     html +=
-      `<button class=\x22entity-card\x22 data-loc-id=\x22` + id + `\x22>` +
-        `<div class=\x22` + thumbClass + `\x22` + thumbStyle + `></div>` +
-        `<div class=\x22body\x22>` +
-          `<h4>` + esc(l.name) + `</h4>` +
-          `<div class=\x22desc\x22>` + esc(l.description || l.mood || `No description.`) + `</div>` +
-        `</div>` +
-      `</button>`;
+      '<button class=\x22entity-card\x22 data-loc-id=\x22' + id + '\x22>' +
+        '<div class=\x22' + thumbClass + '\x22' + thumbStyle + '></div>' +
+        '<div class=\x22body\x22>' +
+          '<h4>' + esc(l.name) + '</h4>' +
+          '<div class=\x22desc\x22>' + esc(l.description || l.mood || 'No description.') + '</div>' +
+        '</div>' +
+      '</button>';
   }
   list.innerHTML = html;
-  var cards = list.querySelectorAll(`[data-loc-id]`);
+  var cards = list.querySelectorAll('[data-loc-id]');
   for (var j = 0; j < cards.length; j++) {
     (function (card) {
-      card.onclick = function () { openLocationForm(card.getAttribute(`data-loc-id`)); };
+      card.onclick = function () { openLocationForm(card.getAttribute('data-loc-id')); };
     })(cards[j]);
   }
 }
@@ -1880,31 +1880,31 @@ function openLocationForm(locationId) {
   STATE.editingId = locationId || null;
   STATE.pendingImage = null;
   var l = locationId ? STATE.locations[locationId] : {};
-  $(`drawer-location-title`).textContent = locationId ? `Edit Location` : `New Location`;
-  $(`loc-form-name`).value = l.name || ``;
-  $(`loc-form-description`).value = l.description || ``;
-  $(`loc-form-mood`).value = l.mood || ``;
-  $(`loc-form-timeofday`).value = l.timeOfDay || ``;
-  setUploadPreview(`loc-upload-label`, l.photoUrl || null);
-  if (locationId) $(`loc-form-delete`).classList.remove(`hidden`);
-  else $(`loc-form-delete`).classList.add(`hidden`);
-  openDrawer(`drawer-location`);
+  $('drawer-location-title').textContent = locationId ? 'Edit Location' : 'New Location';
+  $('loc-form-name').value = l.name || '';
+  $('loc-form-description').value = l.description || '';
+  $('loc-form-mood').value = l.mood || '';
+  $('loc-form-timeofday').value = l.timeOfDay || '';
+  setUploadPreview('loc-upload-label', l.photoUrl || null);
+  if (locationId) $('loc-form-delete').classList.remove('hidden');
+  else $('loc-form-delete').classList.add('hidden');
+  openDrawer('drawer-location');
 }
 
 function handleLocationSave() {
-  var name = $(`loc-form-name`).value.trim();
-  if (!name) { toast(`Name required`, true); return; }
-  var btn = $(`loc-form-save`);
+  var name = $('loc-form-name').value.trim();
+  if (!name) { toast('Name required', true); return; }
+  var btn = $('loc-form-save');
   btn.disabled = true;
-  btn.innerHTML = `<span class=\x22loader\x22></span> Saving...`;
+  btn.innerHTML = '<span class=\x22loader\x22></span> Saving...';
 
   var pid = STATE.projectId;
-  var id = STATE.editingId || entityRef(pid, `locations`).push().key;
+  var id = STATE.editingId || entityRef(pid, 'locations').push().key;
   var photoUrl = (STATE.locations[id] && STATE.locations[id].photoUrl) || null;
 
   var uploadPromise;
   if (STATE.pendingImage) {
-    var path = `users/` + uid() + `/data/` + pid + `/locations/` + id + `.jpg`;
+    var path = 'users/' + uid() + '/data/' + pid + '/locations/' + id + '.jpg';
     var ref = storage.ref(path);
     uploadPromise = ref.put(STATE.pendingImage).then(function () { return ref.getDownloadURL(); }).then(function (url) { photoUrl = url; });
   } else {
@@ -1914,59 +1914,59 @@ function handleLocationSave() {
   uploadPromise.then(function () {
     var payload = {
       name: name,
-      description: $(`loc-form-description`).value.trim(),
-      mood: $(`loc-form-mood`).value.trim(),
-      timeOfDay: $(`loc-form-timeofday`).value,
+      description: $('loc-form-description').value.trim(),
+      mood: $('loc-form-mood').value.trim(),
+      timeOfDay: $('loc-form-timeofday').value,
       photoUrl: photoUrl,
       updatedAt: Date.now()
     };
-    return entityRef(pid, `locations`).child(id).update(payload).then(function () {
+    return entityRef(pid, 'locations').child(id).update(payload).then(function () {
       STATE.locations[id] = Object.assign({}, STATE.locations[id] || {}, payload);
       renderLocations();
       updateCounts();
       closeAllDrawers();
-      toast(`Location saved.`);
+      toast('Location saved.');
     });
   }).catch(function (e) {
-    toast(`Save failed: ` + e.message, true);
+    toast('Save failed: ' + e.message, true);
   }).then(function () {
     btn.disabled = false;
-    btn.textContent = `Save Location`;
+    btn.textContent = 'Save Location';
   });
 }
 
 function handleLocationDelete() {
-  if (!confirm(`Delete this location?`)) return;
+  if (!confirm('Delete this location?')) return;
   var id = STATE.editingId;
-  entityRef(STATE.projectId, `locations`).child(id).remove().then(function () {
+  entityRef(STATE.projectId, 'locations').child(id).remove().then(function () {
     delete STATE.locations[id];
     renderLocations();
     updateCounts();
     closeAllDrawers();
-    toast(`Location deleted.`);
+    toast('Location deleted.');
   });
 }
 
 /* ============ SCENES ============ */
 
 function renderScenes() {
-  var list = $(`scenes-list`);
+  var list = $('scenes-list');
   var ids = Object.keys(STATE.scenes);
   var entries = ids.map(function (k) { return [k, STATE.scenes[k]]; });
   entries.sort(function (a, b) { return (a[1].order || 0) - (b[1].order || 0); });
 
   if (entries.length === 0) {
     list.innerHTML =
-      `<div class=\x22empty-state\x22>` +
-        `<h3>Write the screenplay.</h3>` +
-        `<p>Each scene is one clip - 5 to 15 seconds. Describe what happens, who is there, how the camera moves, what they say.</p>` +
-        `<button class=\x22btn primary\x22 id=\x22btn-first-scene\x22>Add First Scene</button>` +
-      `</div>`;
-    $(`btn-first-scene`).onclick = function () { openSceneForm(); };
+      '<div class=\x22empty-state\x22>' +
+        '<h3>Write the screenplay.</h3>' +
+        '<p>Each scene is one clip - 5 to 15 seconds. Describe what happens, who is there, how the camera moves, what they say.</p>' +
+        '<button class=\x22btn primary\x22 id=\x22btn-first-scene\x22>Add First Scene</button>' +
+      '</div>';
+    $('btn-first-scene').onclick = function () { openSceneForm(); };
     return;
   }
 
-  var html = ``;
+  var html = '';
   for (var i = 0; i < entries.length; i++) {
     var id = entries[i][0];
     var s = entries[i][1];
@@ -1978,28 +1978,28 @@ function renderScenes() {
         if (c) charNames.push(c.name);
       }
     }
-    var numStr = (i + 1 < 10 ? `0` : ``) + (i + 1);
+    var numStr = (i + 1 < 10 ? '0' : '') + (i + 1);
     var metaParts = [];
-    if (loc) metaParts.push(`<span>` + esc(loc) + `</span>`);
-    if (charNames.length) metaParts.push(`<span>` + esc(charNames.join(`, `)) + `</span>`);
-    if (s.camera) metaParts.push(`<span>` + esc(s.camera) + `</span>`);
+    if (loc) metaParts.push('<span>' + esc(loc) + '</span>');
+    if (charNames.length) metaParts.push('<span>' + esc(charNames.join(', ')) + '</span>');
+    if (s.camera) metaParts.push('<span>' + esc(s.camera) + '</span>');
 
     html +=
-      `<button class=\x22scene-card\x22 data-scene-id=\x22` + id + `\x22>` +
-        `<div class=\x22scene-number\x22>` + numStr + `<small>SCN</small></div>` +
-        `<div class=\x22scene-body\x22>` +
-          `<h4>` + esc(s.title || `Untitled scene`) + `</h4>` +
-          `<div class=\x22scene-meta\x22>` + metaParts.join(` / `) + `</div>` +
-          `<div class=\x22scene-action\x22>` + esc(s.action || ``) + `</div>` +
-        `</div>` +
-        `<div class=\x22scene-duration\x22>` + (s.duration || 8) + `s</div>` +
-      `</button>`;
+      '<button class=\x22scene-card\x22 data-scene-id=\x22' + id + '\x22>' +
+        '<div class=\x22scene-number\x22>' + numStr + '<small>SCN</small></div>' +
+        '<div class=\x22scene-body\x22>' +
+          '<h4>' + esc(s.title || 'Untitled scene') + '</h4>' +
+          '<div class=\x22scene-meta\x22>' + metaParts.join(' / ') + '</div>' +
+          '<div class=\x22scene-action\x22>' + esc(s.action || '') + '</div>' +
+        '</div>' +
+        '<div class=\x22scene-duration\x22>' + (s.duration || 8) + 's</div>' +
+      '</button>';
   }
   list.innerHTML = html;
-  var cards = list.querySelectorAll(`[data-scene-id]`);
+  var cards = list.querySelectorAll('[data-scene-id]');
   for (var j = 0; j < cards.length; j++) {
     (function (card) {
-      card.onclick = function () { openSceneForm(card.getAttribute(`data-scene-id`)); };
+      card.onclick = function () { openSceneForm(card.getAttribute('data-scene-id')); };
     })(cards[j]);
   }
 }
@@ -2010,46 +2010,46 @@ function openSceneForm(sceneId) {
   var ids = Object.keys(STATE.scenes);
   var scnNum = sceneId ? (ids.indexOf(sceneId) + 1) : (ids.length + 1);
 
-  $(`drawer-scene-title`).textContent = sceneId ? `Edit Scene` : `New Scene`;
-  $(`scene-form-number`).textContent = `Scene ` + (scnNum < 10 ? `0` : ``) + scnNum;
-  $(`scene-form-title`).value = s.title || ``;
-  $(`scene-form-duration`).value = s.duration || 8;
-  $(`scene-form-camera`).value = s.camera || ``;
-  $(`scene-form-action`).value = s.action || ``;
-  $(`scene-form-reactions`).value = s.reactions || ``;
-  $(`scene-form-ambient`).value = s.ambient || ``;
+  $('drawer-scene-title').textContent = sceneId ? 'Edit Scene' : 'New Scene';
+  $('scene-form-number').textContent = 'Scene ' + (scnNum < 10 ? '0' : '') + scnNum;
+  $('scene-form-title').value = s.title || '';
+  $('scene-form-duration').value = s.duration || 8;
+  $('scene-form-camera').value = s.camera || '';
+  $('scene-form-action').value = s.action || '';
+  $('scene-form-reactions').value = s.reactions || '';
+  $('scene-form-ambient').value = s.ambient || '';
 
   // Location dropdown
-  var locOptions = `<option value=\x22\x22>- Select -</option>`;
+  var locOptions = '<option value=\x22\x22>- Select -</option>';
   var locIds = Object.keys(STATE.locations);
   for (var i = 0; i < locIds.length; i++) {
     var lid = locIds[i];
-    var selected = s.locationId === lid ? ` selected` : ``;
-    locOptions += `<option value=\x22` + lid + `\x22` + selected + `>` + esc(STATE.locations[lid].name) + `</option>`;
+    var selected = s.locationId === lid ? ' selected' : '';
+    locOptions += '<option value=\x22' + lid + '\x22' + selected + '>' + esc(STATE.locations[lid].name) + '</option>';
   }
-  $(`scene-form-location`).innerHTML = locOptions;
+  $('scene-form-location').innerHTML = locOptions;
 
   // Character chips
-  var chipBox = $(`scene-form-characters`);
+  var chipBox = $('scene-form-characters');
   var selectedChars = {};
   if (s.characterIds) {
     for (var j = 0; j < s.characterIds.length; j++) selectedChars[s.characterIds[j]] = true;
   }
   var charIds = Object.keys(STATE.characters);
   if (charIds.length === 0) {
-    chipBox.innerHTML = `<span class=\x22chip empty-hint\x22>No characters yet - add some first</span>`;
+    chipBox.innerHTML = '<span class=\x22chip empty-hint\x22>No characters yet - add some first</span>';
   } else {
-    var chipHtml = ``;
+    var chipHtml = '';
     for (var m = 0; m < charIds.length; m++) {
       var cid = charIds[m];
-      var cls = selectedChars[cid] ? `chip active` : `chip`;
-      chipHtml += `<span class=\x22` + cls + `\x22 data-char-id=\x22` + cid + `\x22>` + esc(STATE.characters[cid].name) + `</span>`;
+      var cls = selectedChars[cid] ? 'chip active' : 'chip';
+      chipHtml += '<span class=\x22' + cls + '\x22 data-char-id=\x22' + cid + '\x22>' + esc(STATE.characters[cid].name) + '</span>';
     }
     chipBox.innerHTML = chipHtml;
-    var chips = chipBox.querySelectorAll(`.chip`);
+    var chips = chipBox.querySelectorAll('.chip');
     for (var n = 0; n < chips.length; n++) {
       (function (chip) {
-        chip.onclick = function () { chip.classList.toggle(`active`); };
+        chip.onclick = function () { chip.classList.toggle('active'); };
       })(chips[n]);
     }
   }
@@ -2057,41 +2057,41 @@ function openSceneForm(sceneId) {
   STATE.dialogueRows = s.dialogue ? s.dialogue.slice() : [];
   renderDialogueRows();
 
-  if (sceneId) $(`scene-form-delete`).classList.remove(`hidden`);
-  else $(`scene-form-delete`).classList.add(`hidden`);
-  openDrawer(`drawer-scene`);
+  if (sceneId) $('scene-form-delete').classList.remove('hidden');
+  else $('scene-form-delete').classList.add('hidden');
+  openDrawer('drawer-scene');
 }
 
 function addDialogueRow() {
-  STATE.dialogueRows.push({ characterId: ``, line: `` });
+  STATE.dialogueRows.push({ characterId: '', line: '' });
   renderDialogueRows();
 }
 
 function renderDialogueRows() {
-  var box = $(`scene-form-dialogue`);
+  var box = $('scene-form-dialogue');
   if (STATE.dialogueRows.length === 0) {
-    box.innerHTML = `<div style=\x22color:var(--ink-faint);font-size:11px;font-style:italic;padding:8px 0;\x22>No dialogue. Tap + Line to add.</div>`;
+    box.innerHTML = '<div style=\x22color:var(--ink-faint);font-size:11px;font-style:italic;padding:8px 0;\x22>No dialogue. Tap + Line to add.</div>';
     return;
   }
   var charIds = Object.keys(STATE.characters);
-  var html = ``;
+  var html = '';
   for (var i = 0; i < STATE.dialogueRows.length; i++) {
     var d = STATE.dialogueRows[i];
-    var options = `<option value=\x22\x22>- Speaker -</option>`;
+    var options = '<option value=\x22\x22>- Speaker -</option>';
     for (var j = 0; j < charIds.length; j++) {
       var cid = charIds[j];
-      var selected = d.characterId === cid ? ` selected` : ``;
-      options += `<option value=\x22` + cid + `\x22` + selected + `>` + esc(STATE.characters[cid].name) + `</option>`;
+      var selected = d.characterId === cid ? ' selected' : '';
+      options += '<option value=\x22' + cid + '\x22' + selected + '>' + esc(STATE.characters[cid].name) + '</option>';
     }
     html +=
-      `<div class=\x22dialogue-row\x22>` +
-        `<button type=\x22button\x22 class=\x22remove-dialogue\x22 data-i=\x22` + i + `\x22>&times;</button>` +
-        `<select data-i=\x22` + i + `\x22 class=\x22dialogue-char\x22>` + options + `</select>` +
-        `<textarea data-i=\x22` + i + `\x22 class=\x22dialogue-line\x22 placeholder=\x22What do they say?\x22>` + esc(d.line || ``) + `</textarea>` +
+      '<div class=\x22dialogue-row\x22>' +
+        '<button type=\x22button\x22 class=\x22remove-dialogue\x22 data-i=\x22' + i + '\x22>&times;</button>' +
+        '<select data-i=\x22' + i + '\x22 class=\x22dialogue-char\x22>' + options + '</select>' +
+        '<textarea data-i=\x22' + i + '\x22 class=\x22dialogue-line\x22 placeholder=\x22What do they say?\x22>' + esc(d.line || '') + '</textarea>' +
 
-```
-  `</div>`;
-```
+'''
+  '</div>';
+'''
 
 }
 box.innerHTML = html;
@@ -2100,26 +2100,26 @@ var removeBtns = box.querySelectorAll('.remove-dialogue');
 for (var k = 0; k < removeBtns.length; k++) {
 (function (btn) {
 btn.onclick = function () {
-var idx = parseInt(btn.getAttribute(`data-i`), 10);
+var idx = parseInt(btn.getAttribute('data-i'), 10);
 STATE.dialogueRows.splice(idx, 1);
 renderDialogueRows();
 };
 })(removeBtns[k]);
 }
-var selects = box.querySelectorAll(`.dialogue-char`);
+var selects = box.querySelectorAll('.dialogue-char');
 for (var m = 0; m < selects.length; m++) {
 (function (sel) {
 sel.onchange = function () {
-var idx = parseInt(sel.getAttribute(`data-i`), 10);
+var idx = parseInt(sel.getAttribute('data-i'), 10);
 STATE.dialogueRows[idx].characterId = sel.value;
 };
 })(selects[m]);
 }
-var textareas = box.querySelectorAll(`.dialogue-line`);
+var textareas = box.querySelectorAll('.dialogue-line');
 for (var n = 0; n < textareas.length; n++) {
 (function (ta) {
 ta.oninput = function () {
-var idx = parseInt(ta.getAttribute(`data-i`), 10);
+var idx = parseInt(ta.getAttribute('data-i'), 10);
 STATE.dialogueRows[idx].line = ta.value;
 };
 })(textareas[n]);
@@ -2127,14 +2127,14 @@ STATE.dialogueRows[idx].line = ta.value;
 }
 
 function handleSceneSave() {
-var title = $(`scene-form-title`).value.trim();
-var action = $(`scene-form-action`).value.trim();
-if (!title) { toast(`Scene title required`, true); return; }
-if (!action) { toast(`Action description required`, true); return; }
+var title = $('scene-form-title').value.trim();
+var action = $('scene-form-action').value.trim();
+if (!title) { toast('Scene title required', true); return; }
+if (!action) { toast('Action description required', true); return; }
 
-var chipEls = document.querySelectorAll(`#scene-form-characters .chip.active`);
+var chipEls = document.querySelectorAll('#scene-form-characters .chip.active');
 var selectedCharIds = [];
-for (var i = 0; i < chipEls.length; i++) selectedCharIds.push(chipEls[i].getAttribute(`data-char-id`));
+for (var i = 0; i < chipEls.length; i++) selectedCharIds.push(chipEls[i].getAttribute('data-char-id'));
 
 var cleanDialogue = [];
 for (var j = 0; j < STATE.dialogueRows.length; j++) {
@@ -2144,12 +2144,12 @@ cleanDialogue.push({ characterId: d.characterId || null, line: d.line.trim() });
 }
 }
 
-var btn = $(`scene-form-save`);
+var btn = $('scene-form-save');
 btn.disabled = true;
-btn.innerHTML = `<span class=\x22loader\x22></span> Saving...`;
+btn.innerHTML = '<span class=\x22loader\x22></span> Saving...';
 
 var pid = STATE.projectId;
-var id = STATE.editingId || entityRef(pid, `scenes`).push().key;
+var id = STATE.editingId || entityRef(pid, 'scenes').push().key;
 var existingOrder = STATE.scenes[id] && STATE.scenes[id].order;
 var maxOrder = 0;
 var keys = Object.keys(STATE.scenes);
@@ -2160,41 +2160,41 @@ if (o > maxOrder) maxOrder = o;
 
 var payload = {
 title: title,
-duration: parseInt($(`scene-form-duration`).value, 10) || 8,
-locationId: $(`scene-form-location`).value || null,
+duration: parseInt($('scene-form-duration').value, 10) || 8,
+locationId: $('scene-form-location').value || null,
 characterIds: selectedCharIds,
-camera: $(`scene-form-camera`).value.trim(),
+camera: $('scene-form-camera').value.trim(),
 action: action,
-reactions: $(`scene-form-reactions`).value.trim(),
-ambient: $(`scene-form-ambient`).value.trim(),
+reactions: $('scene-form-reactions').value.trim(),
+ambient: $('scene-form-ambient').value.trim(),
 dialogue: cleanDialogue,
 order: existingOrder != null ? existingOrder : maxOrder + 1,
 updatedAt: Date.now()
 };
 
-entityRef(pid, `scenes`).child(id).update(payload).then(function () {
+entityRef(pid, 'scenes').child(id).update(payload).then(function () {
 STATE.scenes[id] = Object.assign({}, STATE.scenes[id] || {}, payload);
 renderScenes();
 updateCounts();
 closeAllDrawers();
-toast(`Scene saved.`);
+toast('Scene saved.');
 }).catch(function (e) {
-toast(`Save failed: ` + e.message, true);
+toast('Save failed: ' + e.message, true);
 }).then(function () {
 btn.disabled = false;
-btn.textContent = `Save Scene`;
+btn.textContent = 'Save Scene';
 });
 }
 
 function handleSceneDelete() {
-if (!confirm(`Delete this scene?`)) return;
+if (!confirm('Delete this scene?')) return;
 var id = STATE.editingId;
-entityRef(STATE.projectId, `scenes`).child(id).remove().then(function () {
+entityRef(STATE.projectId, 'scenes').child(id).remove().then(function () {
 delete STATE.scenes[id];
 renderScenes();
 updateCounts();
 closeAllDrawers();
-toast(`Scene deleted.`);
+toast('Scene deleted.');
 });
 }
 
@@ -2215,59 +2215,59 @@ reader.readAsDataURL(f);
 
 function wireUp() {
 // Setup screen
-var btnSaveConfig = $(`btn-save-config`);
+var btnSaveConfig = $('btn-save-config');
 if (btnSaveConfig) btnSaveConfig.onclick = handleSaveConfig;
 
 // Auth
-var btnSignin = $(`btn-signin`);
+var btnSignin = $('btn-signin');
 if (btnSignin) btnSignin.onclick = handleSignIn;
 
-var btnSignout = $(`btn-signout`);
+var btnSignout = $('btn-signout');
 if (btnSignout) btnSignout.onclick = function () { auth.signOut(); };
 
 // Tabs
-var tabs = document.querySelectorAll(`.tab-btn`);
+var tabs = document.querySelectorAll('.tab-btn');
 for (var i = 0; i < tabs.length; i++) {
 (function (btn) {
-btn.onclick = function () { switchTab(btn.getAttribute(`data-tab`)); };
+btn.onclick = function () { switchTab(btn.getAttribute('data-tab')); };
 })(tabs[i]);
 }
 
 // Add buttons
-var addChar = $(`btn-add-character`);
+var addChar = $('btn-add-character');
 if (addChar) addChar.onclick = function () { openCharacterForm(); };
-var addLoc = $(`btn-add-location`);
+var addLoc = $('btn-add-location');
 if (addLoc) addLoc.onclick = function () { openLocationForm(); };
-var addScene = $(`btn-add-scene`);
+var addScene = $('btn-add-scene');
 if (addScene) addScene.onclick = function () { openSceneForm(); };
-var addDialogue = $(`btn-add-dialogue`);
+var addDialogue = $('btn-add-dialogue');
 if (addDialogue) addDialogue.onclick = addDialogueRow;
 
 // Save buttons
-$(`project-form-save`).onclick = handleProjectSave;
-$(`char-form-save`).onclick = handleCharacterSave;
-$(`char-form-delete`).onclick = handleCharacterDelete;
-$(`loc-form-save`).onclick = handleLocationSave;
-$(`loc-form-delete`).onclick = handleLocationDelete;
-$(`scene-form-save`).onclick = handleSceneSave;
-$(`scene-form-delete`).onclick = handleSceneDelete;
+$('project-form-save').onclick = handleProjectSave;
+$('char-form-save').onclick = handleCharacterSave;
+$('char-form-delete').onclick = handleCharacterDelete;
+$('loc-form-save').onclick = handleLocationSave;
+$('loc-form-delete').onclick = handleLocationDelete;
+$('scene-form-save').onclick = handleSceneSave;
+$('scene-form-delete').onclick = handleSceneDelete;
 
 // Delete project
-var delProj = $(`btn-delete-project`);
+var delProj = $('btn-delete-project');
 if (delProj) delProj.onclick = deleteCurrentProject;
 
 // Photo uploads
-$(`char-form-photo`).onchange = handlePhotoChange(`char-upload-label`);
-$(`loc-form-photo`).onchange = handlePhotoChange(`loc-upload-label`);
+$('char-form-photo').onchange = handlePhotoChange('char-upload-label');
+$('loc-form-photo').onchange = handlePhotoChange('loc-upload-label');
 
 // Close buttons
-var closes = document.querySelectorAll(`[data-close]`);
+var closes = document.querySelectorAll('[data-close]');
 for (var j = 0; j < closes.length; j++) closes[j].onclick = closeAllDrawers;
-$(`modal-backdrop`).onclick = closeAllDrawers;
+$('modal-backdrop').onclick = closeAllDrawers;
 
 // Keyboard
-document.addEventListener(`keydown`, function (e) {
-if (e.key === `Escape`) closeAllDrawers();
+document.addEventListener('keydown', function (e) {
+if (e.key === 'Escape') closeAllDrawers();
 });
 }
 
