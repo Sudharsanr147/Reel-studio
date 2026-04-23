@@ -2001,22 +2001,18 @@ function renderDialogueRows() {
         ${charOptions.map(([id, c]) => `<option value="${id}" ${d.characterId === id ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}
       </select>
       <textarea data-i="${i}" class="dialogue-line" placeholder="What do they say?">${esc(d.line || '')}</textarea>
+    </div>
+  `).join('');
 
-```
-</div>
-```
-
-`).join(’’);
-
-box.querySelectorAll(’.remove-dialogue’).forEach(btn => {
-btn.onclick = () => { STATE.dialogueRows.splice(+btn.dataset.i, 1); renderDialogueRows(); };
-});
-box.querySelectorAll(’.dialogue-char’).forEach(sel => {
-sel.onchange = () => { STATE.dialogueRows[+sel.dataset.i].characterId = sel.value; };
-});
-box.querySelectorAll(’.dialogue-line’).forEach(txt => {
-txt.oninput = () => { STATE.dialogueRows[+txt.dataset.i].line = txt.value; };
-});
+  box.querySelectorAll('.remove-dialogue').forEach(btn => {
+    btn.onclick = () => { STATE.dialogueRows.splice(+btn.dataset.i, 1); renderDialogueRows(); };
+  });
+  box.querySelectorAll('.dialogue-char').forEach(sel => {
+    sel.onchange = () => { STATE.dialogueRows[+sel.dataset.i].characterId = sel.value; };
+  });
+  box.querySelectorAll('.dialogue-line').forEach(txt => {
+    txt.oninput = () => { STATE.dialogueRows[+txt.dataset.i].line = txt.value; };
+  });
 }
 
 document.getElementById(‘scene-form-save’).onclick = async () => {
