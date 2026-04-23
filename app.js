@@ -17,7 +17,7 @@ var db = null;
 var storage = null;
 var auth = null;
 
-var CONFIG_KEY = “reel_firebase_config”;
+var CONFIG_KEY = "reel_firebase_config";
 
 /* ============ HELPERS ============ */
 
