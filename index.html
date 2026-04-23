@@ -580,13 +580,13 @@ white-space: nowrap;
 transition: color .2s;
 }
 .tab-btn:hover { color: #ede9e0; }
-.tab-btn.active { color: #d4a44c; background-color: #1a1a1f; }
+.tab-btn.active { color: #4488ff; background-color: #1a1a1f; }
 .tab-btn.active::after {
 content: ‘’;
 position: absolute;
 bottom: 0; left: 0; right: 0;
 height: 2px;
-background-color: #d4a44c;
+background-color: #4488ff;
 }
 .tab-btn .badge {
 display: inline-block;
@@ -597,7 +597,7 @@ padding: 1px 7px;
 border-radius: 20px;
 font-size: 9px;
 }
-.tab-btn.active .badge { background-color: #d4a44c; color: #0c0c0e; }
+.tab-btn.active .badge { background-color: #4488ff; color: #fff; }
 
 /* Tab content panel */
 .tab-content-wrap {
@@ -793,18 +793,18 @@ border-radius: 3px;
 }
 .btn:hover { background-color: #222228; border-color: #9a9590; color: #ede9e0; }
 .btn.primary {
-background-color: #d4a44c;
-color: #0c0c0e;
-border-color: #d4a44c;
+background-color: #1a5fd4;
+color: #ffffff;
+border-color: #1a5fd4;
 font-weight: 600;
 }
-.btn.primary:hover { background-color: #f0c070; border-color: #f0c070; }
+.btn.primary:hover { background-color: #2a6fe4; border-color: #2a6fe4; }
 .btn.ghost {
 background-color: transparent;
-border: 1px solid #2e2e3a;
-color: #9a9590;
+border: 1px solid #3a5a9a;
+color: #6699ff;
 }
-.btn.ghost:hover { border-color: #d4a44c; color: #d4a44c; }
+.btn.ghost:hover { border-color: #6699ff; color: #aabbff; }
 .btn.danger {
 background-color: transparent;
 border: 1px solid rgba(200,60,60,.4);
@@ -817,8 +817,8 @@ color: #e55;
 
 .btn-add {
 background-color: transparent;
-border: 1px solid rgba(212,164,76,.35);
-color: #d4a44c;
+border: 1px solid rgba(68,136,255,.5);
+color: #4488ff;
 padding: 8px 16px;
 font: inherit;
 font-size: 10px;
@@ -831,7 +831,7 @@ gap: 6px;
 transition: all .18s;
 border-radius: 3px;
 }
-.btn-add:hover { background-color: #d4a44c; color: #0c0c0e; border-color: #d4a44c; }
+.btn-add:hover { background-color: #1a5fd4; color: #fff; border-color: #1a5fd4; }
 .btn-add.tiny { padding: 5px 10px; font-size: 9px; }
 .btn-add .plus {
 font-family: ‘Cormorant Garamond’, serif;
@@ -878,7 +878,7 @@ justify-content: space-between;
 background-color: #0c0c0e;
 flex-shrink: 0;
 }
-.drawer-head .mono-label { color: #d4a44c; font-size: 10px; letter-spacing: .2em; text-transform: uppercase; font-weight: 600; margin-bottom: 4px; }
+.drawer-head .mono-label { color: #ff4444; font-size: 10px; letter-spacing: .2em; text-transform: uppercase; font-weight: 600; margin-bottom: 4px; }
 .drawer-head h3 {
 font-family: ‘Cormorant Garamond’, serif;
 font-size: 24px;
@@ -928,7 +928,7 @@ display: block;
 font-size: 10px;
 letter-spacing: .18em;
 text-transform: uppercase;
-color: #d4a44c;
+color: #ff4444;
 margin-bottom: 7px;
 font-weight: 600;
 }
@@ -937,143 +937,113 @@ font-weight: 600;
 font-size: 10px;
 letter-spacing: .18em;
 text-transform: uppercase;
-color: #d4a44c;
+color: #ff4444;
 font-weight: 600;
 }
 .field .hint { margin-top: 5px; font-size: 11px; color: #55524e; }
 
 /* TEXT INPUTS */
+/* =====================================================
+FORM INPUTS - NUCLEAR DARK OVERRIDE
+Uses transition delay trick + shadow inset to
+defeat Chrome autofill and focus bg override
+===================================================== */
+
+/* All inputs/textarea/select: dark bg forced */
 .field input[type=“text”],
 .field input[type=“number”],
-.field input[type=“password”] {
+.field input[type=“password”],
+.field textarea,
+.field select,
+#auth-email,
+#auth-password {
 display: block;
 width: 100%;
-background-color: #0c0c0e !important;
-border: 1px solid #3a3a48 !important;
-color: #ede9e0 !important;
+/* Use transition delay trick - Chrome autofill can’t override this */
+background-color: #1c1c24 !important;
+border: 1px solid #3a3a52 !important;
+color: #ff4444 !important;
+-webkit-text-fill-color: #ff4444 !important;
+caret-color: #ff4444 !important;
 padding: 12px 14px;
 font-family: ‘Inter’, sans-serif;
 font-size: 14px;
 line-height: 1.5;
 border-radius: 3px;
 outline: none;
-transition: border-color .18s;
--webkit-text-fill-color: #ede9e0 !important;
-caret-color: #d4a44c;
+/* Delay background transition - defeats autofill yellow */
+transition: background-color 86400s ease 0s, border-color .18s, box-shadow .18s;
 appearance: none;
 -webkit-appearance: none;
 }
-.field input[type=“text”]:focus,
-.field input[type=“number”]:focus,
-.field input[type=“password”]:focus {
-border-color: #d4a44c !important;
-box-shadow: 0 0 0 3px rgba(212,164,76,.1) !important;
-background-color: #0c0c0e !important;
-color: #ede9e0 !important;
-}
 
-/* TEXTAREA */
-.field textarea {
-display: block;
-width: 100%;
-background-color: #0c0c0e !important;
-border: 1px solid #3a3a48 !important;
-color: #ede9e0 !important;
-padding: 12px 14px;
-font-family: ‘Inter’, sans-serif;
-font-size: 14px;
-line-height: 1.6;
-border-radius: 3px;
-outline: none;
-transition: border-color .18s;
-min-height: 100px;
-resize: vertical;
--webkit-text-fill-color: #ede9e0 !important;
-caret-color: #d4a44c;
-appearance: none;
--webkit-appearance: none;
-}
-.field textarea:focus {
-border-color: #d4a44c !important;
-box-shadow: 0 0 0 3px rgba(212,164,76,.1) !important;
-background-color: #0c0c0e !important;
-color: #ede9e0 !important;
-}
-
-/* SELECT */
-.field select {
-display: block;
-width: 100%;
-background-color: #0c0c0e !important;
-border: 1px solid #3a3a48 !important;
-color: #ede9e0 !important;
-padding: 12px 14px;
-font-family: ‘Inter’, sans-serif;
-font-size: 14px;
-border-radius: 3px;
-outline: none;
-transition: border-color .18s;
--webkit-text-fill-color: #ede9e0 !important;
-cursor: pointer;
-}
-.field select:focus {
-border-color: #d4a44c !important;
-box-shadow: 0 0 0 3px rgba(212,164,76,.1) !important;
-}
-.field select option {
-background-color: #131316;
-color: #ede9e0;
-}
-
-/* AUTH INPUTS - same treatment */
+/* Auth inputs slightly different padding */
 #auth-email,
 #auth-password {
-display: block;
-width: 100%;
-background-color: #131316 !important;
-border: 1px solid #3a3a48 !important;
-color: #ede9e0 !important;
 padding: 13px 16px !important;
-font-family: ‘Inter’, sans-serif;
-font-size: 14px;
-border-radius: 3px;
-outline: none;
-transition: border-color .18s;
--webkit-text-fill-color: #ede9e0 !important;
-caret-color: #d4a44c;
-margin-bottom: 0;
-appearance: none;
--webkit-appearance: none;
-}
-#auth-email:focus,
-#auth-password:focus {
-border-color: #d4a44c !important;
-box-shadow: 0 0 0 3px rgba(212,164,76,.1) !important;
+font-size: 15px;
 }
 
-/* KILL CHROME AUTOFILL on ALL inputs */
+/* Textarea specific */
+.field textarea {
+min-height: 110px;
+resize: vertical;
+line-height: 1.6;
+}
+
+/* Select specific */
+.field select {
+cursor: pointer;
+}
+.field select option {
+background-color: #1c1c24;
+color: #ff4444;
+}
+
+/* Focus state */
+.field input[type=“text”]:focus,
+.field input[type=“number”]:focus,
+.field input[type=“password”]:focus,
+.field textarea:focus,
+.field select:focus,
+#auth-email:focus,
+#auth-password:focus {
+border-color: #4488ff !important;
+box-shadow: 0 0 0 3px rgba(68,136,255,.15) !important;
+background-color: #1c1c24 !important;
+outline: none;
+}
+
+/* AUTOFILL: the only reliable cross-browser kill */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus,
-input:-webkit-autofill:active,
+input:-webkit-autofill:active {
+-webkit-box-shadow: 0 0 0 1000px #1c1c24 inset !important;
+-webkit-text-fill-color: #ff4444 !important;
+caret-color: #ff4444 !important;
+transition: background-color 86400s ease 0s !important;
+}
 textarea:-webkit-autofill,
-textarea:-webkit-autofill:hover,
-textarea:-webkit-autofill:focus,
-select:-webkit-autofill,
-select:-webkit-autofill:hover,
-select:-webkit-autofill:focus {
--webkit-box-shadow: 0 0 0 1000px #0c0c0e inset !important;
--webkit-text-fill-color: #ede9e0 !important;
-caret-color: #d4a44c !important;
-border-color: #3a3a48 !important;
-transition: background-color 5000s ease-in-out 0s;
+select:-webkit-autofill {
+-webkit-box-shadow: 0 0 0 1000px #1c1c24 inset !important;
+-webkit-text-fill-color: #ff4444 !important;
+}
+
+/* Placeholder text */
+.field input::placeholder,
+.field textarea::placeholder,
+#auth-email::placeholder,
+#auth-password::placeholder {
+color: #55526a !important;
+opacity: 1;
 }
 
 /* =====================================================
 IMAGE UPLOAD
 ===================================================== */
 .img-upload {
-border: 1px dashed #3a3a48;
+border: 1px dashed #00cc66;
 padding: 24px;
 text-align: center;
 cursor: pointer;
@@ -1093,9 +1063,9 @@ border-radius: 3px;
 .img-upload input { display: none; }
 .img-upload .upload-prompt .icon {
 font-family: ‘Cormorant Garamond’, serif;
-font-size: 40px;
+font-size: 48px;
 font-weight: 300;
-color: #3a3a48;
+color: #00cc66 !important;
 display: block;
 margin-bottom: 10px;
 }
@@ -1103,7 +1073,7 @@ margin-bottom: 10px;
 font-size: 10px;
 letter-spacing: .18em;
 text-transform: uppercase;
-color: #9a9590;
+color: #00cc66;
 }
 .img-upload .change-overlay { display: none; }
 .img-upload.has-image .change-overlay {
@@ -1144,7 +1114,7 @@ user-select: none;
 border-radius: 20px;
 }
 .chip:hover { border-color: #d4a44c; color: #d4a44c; }
-.chip.active { background-color: #d4a44c; color: #0c0c0e; border-color: #d4a44c; font-weight: 600; }
+.chip.active { background-color: #1a5fd4; color: #fff; border-color: #1a5fd4; font-weight: 600; }
 .chip.empty-hint { color: #55524e; cursor: default; border: none; background: none; font-style: italic; }
 
 /* =====================================================
@@ -1373,7 +1343,7 @@ main { padding: 16px 12px 80px; }
       <div class="grid" id="projects-grid"></div>
     </div>
 
-'''
+
 <!-- PROJECT DETAIL -->
 <div id="view-project" class="hidden">
   <div class="project-header">
@@ -1454,7 +1424,7 @@ main { padding: 16px 12px 80px; }
     </div>
   </div>
 </div>
-'''
+
 
   </main>
 </div>
