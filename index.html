@@ -949,6 +949,44 @@ main {
 
 <body>
 
+<!-- ====================== LOADING STATE (visible immediately on first paint) ====================== -->
+
+<div id="loading-screen" style="position:fixed; inset:0; background:#0a0a0a; color:#d4a574; display:grid; place-items:center; z-index:500; font-family:monospace;">
+  <div style="text-align:center;">
+    <div style="width:24px; height:24px; border:2px solid #4a4742; border-top-color:#d4a574; border-radius:50%; animation:spin 0.8s linear infinite; margin:0 auto 16px;"></div>
+    <div style="font-size:11px; letter-spacing:0.3em; text-transform:uppercase;">Loading Reel.</div>
+  </div>
+</div>
+
+<!-- ====================== DEBUG ERROR DISPLAY ====================== -->
+
+<div id="fatal-error" style="display:none; position:fixed; inset:0; background:#1a0808; color:#ffb3b3; z-index:9999; padding:32px; font-family:monospace; font-size:13px; overflow:auto; line-height:1.6;">
+  <h2 style="color:#ff6b6b; font-family:serif; font-size:28px; margin-bottom:16px;">Startup Error</h2>
+  <p style="margin-bottom:16px;">Something went wrong loading the app. Share this with Badri:</p>
+  <pre id="fatal-error-msg" style="background:#000; padding:16px; border:1px solid #333; white-space:pre-wrap; word-break:break-word;"></pre>
+  <p style="margin-top:20px; color:#888;">Try: reload the page. If it keeps failing, check the browser console.</p>
+</div>
+
+<script>
+// Catch any script error before the main app runs
+window.addEventListener('error', function(e) {
+  var el = document.getElementById('fatal-error');
+  var msg = document.getElementById('fatal-error-msg');
+  if (el && msg) {
+    el.style.display = 'block';
+    msg.textContent = (e.message || 'Unknown error') + '\n\nFile: ' + (e.filename || '?') + '\nLine: ' + (e.lineno || '?') + '\n\n' + (e.error && e.error.stack ? e.error.stack : '');
+  }
+});
+window.addEventListener('unhandledrejection', function(e) {
+  var el = document.getElementById('fatal-error');
+  var msg = document.getElementById('fatal-error-msg');
+  if (el && msg) {
+    el.style.display = 'block';
+    msg.textContent = 'Promise rejection: ' + (e.reason && e.reason.message ? e.reason.message : e.reason) + '\n\n' + (e.reason && e.reason.stack ? e.reason.stack : '');
+  }
+});
+</script>
+
 <!-- ====================== AUTH SCREEN ====================== -->
 
 <div id="auth-screen" class="auth-screen hidden">
@@ -1412,6 +1450,8 @@ function bootstrap() {
 }
 
 function showScreen(id) {
+  const loading = document.getElementById('loading-screen');
+  if (loading) loading.style.display = 'none';
   ['auth-screen', 'setup-screen', 'app'].forEach(s => {
     document.getElementById(s).classList.toggle('hidden', s !== id);
   });
