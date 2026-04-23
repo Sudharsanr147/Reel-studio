@@ -1,0 +1,2131 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="theme-color" content="#0a0a0a" />
+<title>Reel — Movie Studio</title>
+
+<!-- Fonts: Fraunces display + IBM Plex Mono for a cinematic/editorial feel -->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=IBM+Plex+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<!-- Firebase SDK (compat mode for simplicity) -->
+
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+
+<style>
+:root {
+  --bg: #0a0a0a;
+  --bg-2: #121212;
+  --bg-3: #1a1a1a;
+  --ink: #f5f1ea;
+  --ink-dim: #8a847c;
+  --ink-faint: #4a4742;
+  --accent: #d4a574;           /* warm film-stock amber */
+  --accent-hot: #e8b87f;
+  --red: #c94a3b;              /* director's red */
+  --line: rgba(245, 241, 234, 0.08);
+  --line-strong: rgba(245, 241, 234, 0.15);
+  --shadow: 0 20px 60px rgba(0,0,0,0.5);
+  --grain-opacity: 0.04;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'IBM Plex Mono', ui-monospace, monospace;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1.55;
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Film grain overlay */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  pointer-events: none;
+  z-index: 1000;
+  opacity: var(--grain-opacity);
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' /%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+}
+
+h1, h2, h3, h4, .display {
+  font-family: 'Fraunces', serif;
+  font-variation-settings: "opsz" 144, "SOFT" 50;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  color: var(--ink);
+}
+
+.mono-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  font-weight: 500;
+}
+
+/* ============ APP SHELL ============ */
+#app { min-height: 100vh; display: flex; flex-direction: column; }
+
+/* TOP BAR */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+  position: sticky; top: 0; z-index: 50;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand-mark {
+  width: 30px; height: 30px;
+  border: 1px solid var(--accent);
+  display: grid; place-items: center;
+  position: relative;
+}
+.brand-mark::before, .brand-mark::after {
+  content: ''; position: absolute;
+  width: 4px; height: 4px; background: var(--accent);
+}
+.brand-mark::before { top: 3px; left: 3px; }
+.brand-mark::after { bottom: 3px; right: 3px; }
+.brand-mark span {
+  font-family: 'Fraunces', serif;
+  font-weight: 500;
+  font-size: 16px;
+  color: var(--accent);
+}
+.brand-name {
+  font-family: 'Fraunces', serif;
+  font-size: 20px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+}
+.brand-sub {
+  color: var(--ink-dim);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+.crumb {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  margin: 0 24px;
+}
+.crumb .sep { color: var(--ink-faint); }
+.crumb button {
+  background: none; border: none; color: var(--ink-dim);
+  font: inherit; cursor: pointer;
+  letter-spacing: inherit; text-transform: inherit;
+  padding: 0;
+}
+.crumb button:hover { color: var(--accent); }
+.crumb .current { color: var(--ink); }
+
+.topbar .auth-chip {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 11px;
+  color: var(--ink-dim);
+}
+.auth-chip .dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--ink-faint);
+}
+.auth-chip.live .dot { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+
+/* ============ MAIN ============ */
+main {
+  flex: 1;
+  padding: 32px 24px 100px;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* ============ VIEW: PROJECTS LIST ============ */
+.hero {
+  padding: 60px 0 48px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.hero .eyebrow { color: var(--accent); }
+.hero h1 {
+  font-size: clamp(44px, 7vw, 84px);
+  font-weight: 300;
+  font-style: italic;
+}
+.hero h1 em { font-style: normal; color: var(--accent); }
+.hero p {
+  color: var(--ink-dim);
+  max-width: 520px;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 24px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+.section-head h2 { font-size: 24px; font-weight: 400; }
+.section-head .count {
+  font-size: 11px; color: var(--ink-dim);
+  letter-spacing: 0.15em; text-transform: uppercase;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.project-card {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  padding: 24px 22px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  position: relative;
+  overflow: hidden;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 180px;
+}
+.project-card:hover {
+  background: var(--bg-3);
+  border-color: var(--line-strong);
+  transform: translateY(-2px);
+}
+.project-card::before {
+  content: ''; position: absolute;
+  top: 0; left: 0; width: 3px; height: 0;
+  background: var(--accent);
+  transition: height 0.3s ease;
+}
+.project-card:hover::before { height: 100%; }
+.project-card h3 {
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1.15;
+}
+.project-card .tag {
+  font-size: 10px;
+  color: var(--accent);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+.project-card .stats {
+  display: flex; gap: 16px;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px dashed var(--line);
+  font-size: 10px;
+  color: var(--ink-dim);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.project-card .stats span strong {
+  color: var(--ink); font-weight: 500;
+  font-family: 'Fraunces', serif;
+  font-size: 16px;
+  margin-right: 4px;
+}
+
+.new-project-card {
+  background: transparent;
+  border: 1px dashed var(--line-strong);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  color: var(--ink-dim);
+  transition: all 0.2s ease;
+  min-height: 180px;
+  font-family: inherit;
+}
+.new-project-card:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(212, 165, 116, 0.03);
+}
+.new-project-card .plus {
+  font-size: 48px;
+  font-family: 'Fraunces', serif;
+  font-weight: 200;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+.new-project-card span {
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+/* ============ VIEW: PROJECT DETAIL ============ */
+.project-header {
+  padding: 20px 0 32px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 32px;
+}
+.project-header .eyebrow {
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+.project-header h1 {
+  font-size: clamp(36px, 6vw, 64px);
+  font-weight: 300;
+  font-style: italic;
+  margin-bottom: 8px;
+}
+.project-header .meta {
+  color: var(--ink-dim);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+/* Tab nav */
+.tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 32px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.tabs button {
+  background: none;
+  border: none;
+  color: var(--ink-dim);
+  font: inherit;
+  padding: 14px 20px;
+  cursor: pointer;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  position: relative;
+  white-space: nowrap;
+  transition: color 0.2s ease;
+}
+.tabs button:hover { color: var(--ink); }
+.tabs button.active { color: var(--accent); }
+.tabs button.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px; left: 20px; right: 20px;
+  height: 1px;
+  background: var(--accent);
+}
+.tabs button .badge {
+  display: inline-block;
+  margin-left: 8px;
+  background: var(--bg-3);
+  color: var(--ink-dim);
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+}
+.tabs button.active .badge { background: var(--accent); color: var(--bg); }
+
+/* ============ ENTITY CARDS (Character / Location) ============ */
+.entity-card {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  padding: 20px;
+  display: flex;
+  gap: 18px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  width: 100%;
+}
+.entity-card:hover {
+  background: var(--bg-3);
+  border-color: var(--line-strong);
+}
+.entity-card .thumb {
+  width: 80px; height: 80px;
+  flex-shrink: 0;
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  background-size: cover;
+  background-position: center;
+  position: relative;
+}
+.entity-card .thumb.empty::after {
+  content: 'NO REF';
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  color: var(--ink-faint);
+}
+.entity-card .body { flex: 1; min-width: 0; }
+.entity-card h4 {
+  font-size: 18px;
+  font-weight: 400;
+  margin-bottom: 4px;
+}
+.entity-card .desc {
+  color: var(--ink-dim);
+  font-size: 12px;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ============ SCENE CARDS ============ */
+.scene-card {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  padding: 22px 24px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 20px;
+  align-items: start;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  width: 100%;
+}
+.scene-card:hover {
+  background: var(--bg-3);
+  border-color: var(--line-strong);
+}
+.scene-number {
+  font-family: 'Fraunces', serif;
+  font-size: 40px;
+  font-weight: 300;
+  color: var(--accent);
+  line-height: 0.9;
+  min-width: 60px;
+}
+.scene-number small {
+  display: block;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  color: var(--ink-faint);
+  font-family: 'IBM Plex Mono', monospace;
+  margin-top: 4px;
+}
+.scene-body h4 {
+  font-size: 16px;
+  font-weight: 400;
+  margin-bottom: 8px;
+  color: var(--ink);
+}
+.scene-body .scene-meta {
+  display: flex; gap: 14px; flex-wrap: wrap;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin-bottom: 10px;
+}
+.scene-body .scene-meta span::before { content: '•'; margin-right: 6px; color: var(--ink-faint); }
+.scene-body .scene-meta span:first-child::before { display: none; }
+.scene-body .scene-action {
+  color: var(--ink-dim);
+  font-size: 12px;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.scene-duration {
+  font-family: 'Fraunces', serif;
+  font-size: 20px;
+  color: var(--ink-dim);
+  font-style: italic;
+}
+
+/* Empty state */
+.empty-state {
+  text-align: center;
+  padding: 80px 20px;
+  color: var(--ink-dim);
+}
+.empty-state h3 {
+  font-size: 32px;
+  font-weight: 300;
+  font-style: italic;
+  margin-bottom: 8px;
+  color: var(--ink);
+}
+.empty-state p {
+  font-size: 13px;
+  margin-bottom: 24px;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ============ BUTTONS ============ */
+.btn {
+  background: var(--ink);
+  color: var(--bg);
+  border: none;
+  padding: 12px 22px;
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.btn:hover { background: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--bg); }
+.btn.primary:hover { background: var(--accent-hot); }
+.btn.ghost {
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  color: var(--ink);
+}
+.btn.ghost:hover { border-color: var(--accent); color: var(--accent); background: transparent; }
+.btn.danger {
+  background: transparent;
+  border: 1px solid var(--red);
+  color: var(--red);
+}
+.btn.danger:hover { background: var(--red); color: var(--ink); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-add {
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  padding: 10px 18px;
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+.btn-add:hover { background: var(--accent); color: var(--bg); }
+.btn-add .plus {
+  font-family: 'Fraunces', serif;
+  font-size: 18px;
+  line-height: 0;
+  font-weight: 300;
+}
+
+/* ============ MODAL / DRAWER ============ */
+.modal-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 100;
+  display: none;
+}
+.modal-backdrop.open { display: block; }
+
+.drawer {
+  position: fixed;
+  top: 0; right: 0;
+  bottom: 0;
+  width: 100%;
+  max-width: 620px;
+  background: var(--bg-2);
+  z-index: 101;
+  transform: translateX(100%);
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-left: 1px solid var(--line);
+}
+.drawer.open { transform: translateX(0); }
+
+.drawer-head {
+  padding: 22px 28px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg);
+}
+.drawer-head .eyebrow { color: var(--accent); margin-bottom: 4px; }
+.drawer-head h3 {
+  font-size: 22px;
+  font-weight: 400;
+}
+.drawer-close {
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  color: var(--ink);
+  width: 36px; height: 36px;
+  cursor: pointer;
+  display: grid; place-items: center;
+  font-size: 18px;
+  font-family: 'Fraunces', serif;
+  transition: all 0.2s;
+}
+.drawer-close:hover { border-color: var(--accent); color: var(--accent); }
+
+.drawer-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 28px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.drawer-foot {
+  padding: 18px 28px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  background: var(--bg);
+}
+
+/* ============ FORM FIELDS ============ */
+.field {
+  margin-bottom: 22px;
+}
+.field label {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+.field label .req { color: var(--red); margin-left: 4px; }
+.field input[type="text"],
+.field input[type="number"],
+.field textarea,
+.field select {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--line-strong);
+  color: var(--ink);
+  padding: 12px 14px;
+  font: inherit;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 13px;
+  transition: border-color 0.2s ease;
+  border-radius: 0;
+}
+.field input:focus,
+.field textarea:focus,
+.field select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.field textarea {
+  min-height: 110px;
+  resize: vertical;
+  line-height: 1.6;
+}
+.field .hint {
+  margin-top: 6px;
+  font-size: 10px;
+  color: var(--ink-faint);
+  letter-spacing: 0.05em;
+}
+
+/* Image upload */
+.img-upload {
+  border: 1px dashed var(--line-strong);
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  min-height: 160px;
+  display: grid;
+  place-items: center;
+  background-size: cover;
+  background-position: center;
+}
+.img-upload:hover { border-color: var(--accent); }
+.img-upload.has-image { min-height: 220px; border-style: solid; }
+.img-upload.has-image .upload-prompt { display: none; }
+.img-upload.has-image .change-overlay {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  background: linear-gradient(transparent, rgba(0,0,0,0.9));
+  padding: 20px 12px 12px;
+  color: var(--ink);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+.img-upload input { display: none; }
+.img-upload .upload-prompt .icon {
+  font-family: 'Fraunces', serif;
+  font-size: 36px;
+  font-weight: 300;
+  color: var(--ink-faint);
+  display: block;
+  margin-bottom: 6px;
+}
+.img-upload .upload-prompt span {
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+/* Multi-select chips */
+.chip-select {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px;
+  background: var(--bg);
+  border: 1px solid var(--line-strong);
+  min-height: 48px;
+}
+.chip-select .chip {
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  padding: 6px 12px;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: all 0.2s;
+  user-select: none;
+}
+.chip-select .chip:hover { border-color: var(--accent); color: var(--accent); }
+.chip-select .chip.active {
+  background: var(--accent);
+  color: var(--bg);
+  border-color: var(--accent);
+  font-weight: 500;
+}
+.chip-select .chip.empty-hint {
+  color: var(--ink-faint);
+  cursor: default;
+  border: none;
+  background: none;
+  padding: 6px 0;
+  font-style: italic;
+}
+
+/* Dialogue rows */
+.dialogue-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  padding: 14px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  margin-bottom: 10px;
+  position: relative;
+}
+.dialogue-row select {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  color: var(--accent);
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  width: auto;
+  max-width: 100%;
+}
+.dialogue-row textarea {
+  background: transparent;
+  border: none;
+  color: var(--ink);
+  font: inherit;
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-size: 15px;
+  line-height: 1.5;
+  resize: vertical;
+  min-height: 48px;
+  padding: 6px 0;
+  border-bottom: 1px dashed var(--line);
+}
+.dialogue-row textarea:focus { outline: none; border-bottom-color: var(--accent); }
+.dialogue-row .remove-dialogue {
+  position: absolute;
+  top: 8px; right: 8px;
+  background: none;
+  border: none;
+  color: var(--ink-faint);
+  cursor: pointer;
+  font-size: 16px;
+  font-family: 'Fraunces', serif;
+  line-height: 1;
+  padding: 4px 8px;
+}
+.dialogue-row .remove-dialogue:hover { color: var(--red); }
+
+/* ============ AUTH SCREEN ============ */
+.auth-screen {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+.auth-card {
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+}
+.auth-card h1 {
+  font-size: 48px;
+  font-weight: 300;
+  font-style: italic;
+  margin-bottom: 8px;
+}
+.auth-card h1 em { font-style: normal; color: var(--accent); }
+.auth-card p {
+  color: var(--ink-dim);
+  margin-bottom: 32px;
+  font-size: 12px;
+}
+.auth-card .field { text-align: left; }
+
+/* ============ LOADING / STATES ============ */
+.loader {
+  display: inline-block;
+  width: 14px; height: 14px;
+  border: 1.5px solid var(--ink-faint);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.toast {
+  position: fixed;
+  bottom: 24px; left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: var(--ink);
+  color: var(--bg);
+  padding: 12px 22px;
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  font-weight: 500;
+  z-index: 200;
+  transition: transform 0.3s ease;
+  box-shadow: var(--shadow);
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+.toast.error { background: var(--red); color: var(--ink); }
+
+/* ============ SETUP PANEL ============ */
+.setup-panel {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  padding: 32px;
+  margin-bottom: 40px;
+}
+.setup-panel h3 {
+  font-size: 20px;
+  margin-bottom: 8px;
+}
+.setup-panel p {
+  color: var(--ink-dim);
+  font-size: 12px;
+  margin-bottom: 20px;
+  line-height: 1.7;
+}
+.setup-panel code {
+  background: var(--bg);
+  padding: 2px 8px;
+  color: var(--accent);
+  font-size: 11px;
+  border: 1px solid var(--line);
+}
+
+/* ============ RESPONSIVE ============ */
+@media (max-width: 720px) {
+  main { padding: 24px 16px 100px; }
+  .topbar { padding: 14px 16px; }
+  .crumb { margin: 0 12px; font-size: 10px; }
+  .brand-name { font-size: 16px; }
+  .brand-sub { display: none; }
+  .hero { padding: 40px 0 32px; margin-bottom: 28px; }
+  .grid { grid-template-columns: 1fr; }
+  .scene-card { grid-template-columns: auto 1fr; }
+  .scene-duration { grid-column: 2; }
+  .tabs button { padding: 12px 14px; }
+  .drawer { max-width: 100%; }
+  .drawer-body, .drawer-head, .drawer-foot { padding-left: 20px; padding-right: 20px; }
+}
+
+/* Utility */
+.hidden { display: none !important; }
+.row { display: flex; gap: 12px; align-items: center; }
+.spread { justify-content: space-between; }
+.grow { flex: 1; }
+.mt-16 { margin-top: 16px; }
+.mt-24 { margin-top: 24px; }
+.mb-8 { margin-bottom: 8px; }
+
+/* Clapper icon (used in loading states, brand mark area) */
+.clapper {
+  display: inline-block;
+  position: relative;
+  width: 14px; height: 10px;
+  border: 1.5px solid currentColor;
+  border-top: none;
+}
+.clapper::before {
+  content: '';
+  position: absolute;
+  top: -4px; left: -1.5px; right: -1.5px;
+  height: 3px;
+  background: currentColor;
+  transform-origin: left;
+  transform: skewX(-25deg);
+}
+</style>
+
+</head>
+
+<body>
+
+<!-- ====================== LOADING STATE (visible immediately on first paint) ====================== -->
+
+<div id="loading-screen" style="position:fixed; inset:0; background:#0a0a0a; color:#d4a574; display:grid; place-items:center; z-index:500; font-family:monospace;">
+  <div style="text-align:center;">
+    <div style="width:24px; height:24px; border:2px solid #4a4742; border-top-color:#d4a574; border-radius:50%; animation:spin 0.8s linear infinite; margin:0 auto 16px;"></div>
+    <div style="font-size:11px; letter-spacing:0.3em; text-transform:uppercase;">Loading Reel.</div>
+  </div>
+</div>
+
+<!-- ====================== DEBUG ERROR DISPLAY ====================== -->
+
+<div id="fatal-error" style="display:none; position:fixed; inset:0; background:#1a0808; color:#ffb3b3; z-index:9999; padding:32px; font-family:monospace; font-size:13px; overflow:auto; line-height:1.6;">
+  <h2 style="color:#ff6b6b; font-family:serif; font-size:28px; margin-bottom:16px;">Startup Error</h2>
+  <p style="margin-bottom:16px;">Something went wrong loading the app. Share this with Badri:</p>
+  <pre id="fatal-error-msg" style="background:#000; padding:16px; border:1px solid #333; white-space:pre-wrap; word-break:break-word;"></pre>
+  <p style="margin-top:20px; color:#888;">Try: reload the page. If it keeps failing, check the browser console.</p>
+</div>
+
+<script>
+// Catch any script error before the main app runs
+window.addEventListener('error', function(e) {
+  var el = document.getElementById('fatal-error');
+  var msg = document.getElementById('fatal-error-msg');
+  if (el && msg) {
+    el.style.display = 'block';
+    msg.textContent = (e.message || 'Unknown error') + '\n\nFile: ' + (e.filename || '?') + '\nLine: ' + (e.lineno || '?') + '\n\n' + (e.error && e.error.stack ? e.error.stack : '');
+  }
+});
+window.addEventListener('unhandledrejection', function(e) {
+  var el = document.getElementById('fatal-error');
+  var msg = document.getElementById('fatal-error-msg');
+  if (el && msg) {
+    el.style.display = 'block';
+    msg.textContent = 'Promise rejection: ' + (e.reason && e.reason.message ? e.reason.message : e.reason) + '\n\n' + (e.reason && e.reason.stack ? e.reason.stack : '');
+  }
+});
+</script>
+
+<!-- ====================== AUTH SCREEN ====================== -->
+
+<div id="auth-screen" class="auth-screen hidden">
+  <div class="auth-card">
+    <div class="brand-mark" style="margin: 0 auto 32px;"><span>R</span></div>
+    <h1><em>Reel.</em></h1>
+    <p class="mono-label" style="margin-bottom: 8px;">MOVIE STUDIO — v0.1</p>
+    <p>Sign in to start building your screenplay. Your projects sync to the cloud automatically.</p>
+
+```
+<div class="field">
+  <label>Email</label>
+  <input type="text" id="auth-email" autocomplete="email" inputmode="email" />
+</div>
+<div class="field">
+  <label>Password</label>
+  <input type="password" id="auth-password" autocomplete="current-password" />
+  <div class="hint">Min 6 characters. Account is created automatically on first login.</div>
+</div>
+<button class="btn primary" id="btn-signin" style="width: 100%; justify-content: center;">
+  Sign In / Create Account
+</button>
+<p id="auth-error" style="color: var(--red); margin-top: 16px; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;"></p>
+```
+
+  </div>
+</div>
+
+<!-- ====================== SETUP SCREEN (shown if Firebase not configured) ====================== -->
+
+<div id="setup-screen" class="auth-screen hidden">
+  <div class="auth-card" style="max-width: 560px; text-align: left;">
+    <h1 style="text-align: center;"><em>Setup.</em></h1>
+    <p style="text-align: center;" class="mt-16">One-time Firebase config needed.</p>
+
+```
+<div class="setup-panel mt-24">
+  <h3>Step 1 — Create a Firebase project</h3>
+  <p>Go to <code>console.firebase.google.com</code>. Create a new project (free Spark plan works). Enable <strong>Authentication → Email/Password</strong>, and <strong>Realtime Database</strong> and <strong>Storage</strong>.</p>
+
+  <h3 style="margin-top: 24px;">Step 2 — Paste your config below</h3>
+  <p>In Firebase Console → Project Settings → Your apps → Add Web App. Copy the <code>firebaseConfig</code> object and paste it here:</p>
+
+  <div class="field">
+    <textarea id="firebase-config-input" placeholder='{&#10;  apiKey: "...",&#10;  authDomain: "...",&#10;  projectId: "...",&#10;  storageBucket: "...",&#10;  databaseURL: "https://....firebaseio.com",&#10;  ...&#10;}' style="min-height: 220px; font-size: 11px;"></textarea>
+    <div class="hint">Make sure <code>databaseURL</code> is included. Find it under Realtime Database in console.</div>
+  </div>
+
+  <button class="btn primary" id="btn-save-config" style="width: 100%; justify-content: center;">
+    Save Configuration
+  </button>
+</div>
+```
+
+  </div>
+</div>
+
+<!-- ====================== APP SCREEN ====================== -->
+
+<div id="app" class="hidden">
+
+  <!-- TOP BAR -->
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark"><span>R</span></div>
+      <div>
+        <div class="brand-name">Reel.</div>
+        <div class="brand-sub">MOVIE STUDIO</div>
+      </div>
+    </div>
+
+```
+<nav class="crumb" id="breadcrumb">
+  <button onclick="navigateHome()">All Projects</button>
+</nav>
+
+<div class="row" style="gap: 12px;">
+  <div class="auth-chip live" id="auth-chip">
+    <div class="dot"></div>
+    <span id="auth-email-display">—</span>
+  </div>
+  <button class="btn ghost" id="btn-signout" style="padding: 6px 12px; font-size: 10px;">Out</button>
+</div>
+```
+
+  </header>
+
+  <!-- MAIN CONTENT -->
+
+  <main>
+    <!-- VIEW: PROJECTS LIST -->
+    <div id="view-projects">
+      <div class="hero">
+        <span class="mono-label eyebrow">Welcome back</span>
+        <h1>Build <em>movies</em>, one scene at a time.</h1>
+        <p>Create a project. Cast your characters. Scout your locations. Write your scenes. Then hand it off to the generator. Your screenplay, structured and ready to film.</p>
+      </div>
+
+```
+  <div class="section-head">
+    <h2>Projects</h2>
+    <span class="count" id="projects-count">0 ITEMS</span>
+  </div>
+
+  <div class="grid" id="projects-grid">
+    <button class="new-project-card" onclick="openProjectForm()">
+      <div class="plus">+</div>
+      <span>New Project</span>
+    </button>
+  </div>
+</div>
+
+<!-- VIEW: PROJECT DETAIL -->
+<div id="view-project" class="hidden">
+  <div class="project-header">
+    <span class="mono-label eyebrow" id="project-eyebrow">PROJECT</span>
+    <h1 id="project-title">Untitled</h1>
+    <div class="meta" id="project-meta"></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="characters">Characters <span class="badge" id="badge-characters">0</span></button>
+    <button class="tab-btn" data-tab="locations">Locations <span class="badge" id="badge-locations">0</span></button>
+    <button class="tab-btn" data-tab="scenes">Scenes <span class="badge" id="badge-scenes">0</span></button>
+    <button class="tab-btn" data-tab="settings">Settings</button>
+  </div>
+
+  <!-- Characters tab -->
+  <div class="tab-content" id="tab-characters">
+    <div class="row spread mb-8" style="margin-bottom: 20px;">
+      <span class="mono-label">Cast</span>
+      <button class="btn-add" onclick="openCharacterForm()"><span class="plus">+</span> Add Character</button>
+    </div>
+    <div id="characters-list"></div>
+  </div>
+
+  <!-- Locations tab -->
+  <div class="tab-content hidden" id="tab-locations">
+    <div class="row spread mb-8" style="margin-bottom: 20px;">
+      <span class="mono-label">Sets</span>
+      <button class="btn-add" onclick="openLocationForm()"><span class="plus">+</span> Add Location</button>
+    </div>
+    <div id="locations-list"></div>
+  </div>
+
+  <!-- Scenes tab -->
+  <div class="tab-content hidden" id="tab-scenes">
+    <div class="row spread mb-8" style="margin-bottom: 20px;">
+      <span class="mono-label">Screenplay</span>
+      <button class="btn-add" onclick="openSceneForm()"><span class="plus">+</span> Add Scene</button>
+    </div>
+    <div id="scenes-list"></div>
+  </div>
+
+  <!-- Settings tab -->
+  <div class="tab-content hidden" id="tab-settings">
+    <div class="entity-card" style="flex-direction: column; align-items: flex-start; cursor: default;">
+      <h4>Danger Zone</h4>
+      <p style="color: var(--ink-dim); font-size: 12px; margin: 10px 0 18px;">Deleting this project will remove all characters, locations, and scenes permanently. This cannot be undone.</p>
+      <button class="btn danger" onclick="deleteCurrentProject()">Delete Project</button>
+    </div>
+  </div>
+</div>
+```
+
+  </main>
+</div>
+
+<!-- ====================== DRAWERS ====================== -->
+
+<div class="modal-backdrop" id="modal-backdrop" onclick="closeAllDrawers()"></div>
+
+<!-- Project drawer -->
+
+<aside class="drawer" id="drawer-project">
+  <div class="drawer-head">
+    <div>
+      <div class="mono-label eyebrow">Project</div>
+      <h3 id="drawer-project-title">New Project</h3>
+    </div>
+    <button class="drawer-close" onclick="closeAllDrawers()">×</button>
+  </div>
+  <div class="drawer-body">
+    <div class="field">
+      <label>Title <span class="req">*</span></label>
+      <input type="text" id="project-form-title" placeholder="e.g., The Last Train Home" />
+    </div>
+    <div class="field">
+      <label>Logline</label>
+      <textarea id="project-form-logline" placeholder="One or two sentences describing the story."></textarea>
+    </div>
+    <div class="field">
+      <label>Genre / Tone</label>
+      <input type="text" id="project-form-genre" placeholder="e.g., Drama, noir, contemplative" />
+    </div>
+  </div>
+  <div class="drawer-foot">
+    <button class="btn ghost" onclick="closeAllDrawers()">Cancel</button>
+    <button class="btn primary" id="project-form-save">Save Project</button>
+  </div>
+</aside>
+
+<!-- Character drawer -->
+
+<aside class="drawer" id="drawer-character">
+  <div class="drawer-head">
+    <div>
+      <div class="mono-label eyebrow">Character</div>
+      <h3 id="drawer-character-title">New Character</h3>
+    </div>
+    <button class="drawer-close" onclick="closeAllDrawers()">×</button>
+  </div>
+  <div class="drawer-body">
+    <div class="field">
+      <label>Name <span class="req">*</span></label>
+      <input type="text" id="char-form-name" placeholder="e.g., Arun" />
+    </div>
+    <div class="field">
+      <label>Reference Photo</label>
+      <label class="img-upload" id="char-upload-label">
+        <input type="file" accept="image/*" id="char-form-photo" />
+        <div class="upload-prompt">
+          <span class="icon">+</span>
+          <span>Upload Reference</span>
+        </div>
+        <div class="change-overlay">Tap to change</div>
+      </label>
+      <div class="hint">Optional. A photo helps the AI keep the character's appearance consistent across scenes.</div>
+    </div>
+    <div class="field">
+      <label>Physical Description</label>
+      <textarea id="char-form-appearance" placeholder="e.g., Late 40s, tired eyes, salt-and-pepper hair, typically in a rumpled white shirt and loosened tie."></textarea>
+    </div>
+    <div class="field">
+      <label>Personality / How They Act</label>
+      <textarea id="char-form-personality" placeholder="e.g., Soft-spoken, observant, carries himself with a quiet weariness. Moves slowly and deliberately."></textarea>
+    </div>
+    <div class="field">
+      <label>Voice / Accent</label>
+      <input type="text" id="char-form-voice" placeholder="e.g., Warm Indian English, mid-range tenor, Chennai inflection" />
+    </div>
+  </div>
+  <div class="drawer-foot">
+    <button class="btn danger hidden" id="char-form-delete">Delete</button>
+    <div class="row" style="gap: 12px; margin-left: auto;">
+      <button class="btn ghost" onclick="closeAllDrawers()">Cancel</button>
+      <button class="btn primary" id="char-form-save">Save Character</button>
+    </div>
+  </div>
+</aside>
+
+<!-- Location drawer -->
+
+<aside class="drawer" id="drawer-location">
+  <div class="drawer-head">
+    <div>
+      <div class="mono-label eyebrow">Location</div>
+      <h3 id="drawer-location-title">New Location</h3>
+    </div>
+    <button class="drawer-close" onclick="closeAllDrawers()">×</button>
+  </div>
+  <div class="drawer-body">
+    <div class="field">
+      <label>Name <span class="req">*</span></label>
+      <input type="text" id="loc-form-name" placeholder="e.g., Chennai Central Station at dusk" />
+    </div>
+    <div class="field">
+      <label>Reference Photo</label>
+      <label class="img-upload" id="loc-upload-label">
+        <input type="file" accept="image/*" id="loc-form-photo" />
+        <div class="upload-prompt">
+          <span class="icon">+</span>
+          <span>Upload Reference</span>
+        </div>
+        <div class="change-overlay">Tap to change</div>
+      </label>
+      <div class="hint">Optional. A photo of the location anchors the visual style.</div>
+    </div>
+    <div class="field">
+      <label>Description</label>
+      <textarea id="loc-form-description" placeholder="e.g., Bustling platform, old yellow sodium lights, stone pillars, crowds thinning out in late evening."></textarea>
+    </div>
+    <div class="field">
+      <label>Atmosphere / Mood</label>
+      <input type="text" id="loc-form-mood" placeholder="e.g., Wistful, warm, slightly melancholic" />
+    </div>
+    <div class="field">
+      <label>Time of Day</label>
+      <select id="loc-form-timeofday">
+        <option value="">—</option>
+        <option>Dawn</option>
+        <option>Morning</option>
+        <option>Midday</option>
+        <option>Afternoon</option>
+        <option>Golden Hour</option>
+        <option>Dusk</option>
+        <option>Night</option>
+        <option>Late Night</option>
+      </select>
+    </div>
+  </div>
+  <div class="drawer-foot">
+    <button class="btn danger hidden" id="loc-form-delete">Delete</button>
+    <div class="row" style="gap: 12px; margin-left: auto;">
+      <button class="btn ghost" onclick="closeAllDrawers()">Cancel</button>
+      <button class="btn primary" id="loc-form-save">Save Location</button>
+    </div>
+  </div>
+</aside>
+
+<!-- Scene drawer -->
+
+<aside class="drawer" id="drawer-scene">
+  <div class="drawer-head">
+    <div>
+      <div class="mono-label eyebrow" id="scene-form-number">Scene</div>
+      <h3 id="drawer-scene-title">New Scene</h3>
+    </div>
+    <button class="drawer-close" onclick="closeAllDrawers()">×</button>
+  </div>
+  <div class="drawer-body">
+    <div class="field">
+      <label>Scene Title / Slug <span class="req">*</span></label>
+      <input type="text" id="scene-form-title" placeholder="e.g., Arun waits on the platform" />
+    </div>
+
+```
+<div class="row" style="gap: 16px;">
+  <div class="field" style="flex: 1;">
+    <label>Duration (seconds)</label>
+    <input type="number" id="scene-form-duration" min="2" max="30" value="8" />
+  </div>
+  <div class="field" style="flex: 1;">
+    <label>Location</label>
+    <select id="scene-form-location">
+      <option value="">— Select —</option>
+    </select>
+  </div>
+</div>
+
+<div class="field">
+  <label>Characters in Scene</label>
+  <div class="chip-select" id="scene-form-characters"></div>
+  <div class="hint">Tap chips to include / exclude characters.</div>
+</div>
+
+<div class="field">
+  <label>Camera / Shot</label>
+  <input type="text" id="scene-form-camera" placeholder="e.g., Slow dolly-in from behind, low angle, handheld" />
+  <div class="hint">Shot type, movement, angle, framing.</div>
+</div>
+
+<div class="field">
+  <label>Action / What Happens <span class="req">*</span></label>
+  <textarea id="scene-form-action" placeholder="e.g., Arun walks slowly along the platform, glances at his watch, then looks up at the departure board. The crowd thins around him."></textarea>
+</div>
+
+<div class="field">
+  <label>Character Reactions / Emotions</label>
+  <textarea id="scene-form-reactions" placeholder="e.g., Arun's expression shifts from anxious to resigned as he realises he's going to miss his train."></textarea>
+</div>
+
+<div class="field">
+  <label>Ambient Details</label>
+  <textarea id="scene-form-ambient" placeholder="e.g., Distant train announcement echoes. Pigeons flutter overhead. Warm lamp light catches dust in the air."></textarea>
+</div>
+
+<div class="field">
+  <label class="row spread" style="margin-bottom: 10px;">
+    <span style="font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-dim); font-weight: 500;">Dialogue</span>
+    <button class="btn-add" type="button" onclick="addDialogueRow()" style="padding: 6px 12px; font-size: 10px;"><span class="plus">+</span> Line</button>
+  </label>
+  <div id="scene-form-dialogue"></div>
+</div>
+```
+
+  </div>
+  <div class="drawer-foot">
+    <button class="btn danger hidden" id="scene-form-delete">Delete</button>
+    <div class="row" style="gap: 12px; margin-left: auto;">
+      <button class="btn ghost" onclick="closeAllDrawers()">Cancel</button>
+      <button class="btn primary" id="scene-form-save">Save Scene</button>
+    </div>
+  </div>
+</aside>
+
+<!-- Toast -->
+
+<div class="toast" id="toast">Saved.</div>
+
+<script>
+/* ============================================================
+   REEL — Movie Studio PWA
+   v0.1 — Projects + Characters + Locations + Scenes
+   Backend hookup comes in v0.2
+   ============================================================ */
+
+const STATE = {
+  user: null,
+  projectId: null,
+  project: null,
+  characters: {},
+  locations: {},
+  scenes: {},
+  editingId: null,        // which entity is being edited (null = creating new)
+  editingType: null,      // 'project' | 'character' | 'location' | 'scene'
+  pendingImage: null,     // File object waiting to be uploaded
+  pendingImagePreview: null, // data URL for preview
+  dialogueRows: []        // scene form dialogue array
+};
+
+let db = null;
+let storage = null;
+let auth = null;
+let firebaseReady = false;
+
+/* ============ FIREBASE BOOTSTRAP ============ */
+const CONFIG_KEY = 'reel_firebase_config';
+
+function initFirebase(config) {
+  try {
+    firebase.initializeApp(config);
+    auth = firebase.auth();
+    db = firebase.database();
+    storage = firebase.storage();
+    firebaseReady = true;
+    return true;
+  } catch (e) {
+    console.error('Firebase init failed:', e);
+    return false;
+  }
+}
+
+function bootstrap() {
+  const stored = localStorage.getItem(CONFIG_KEY);
+  if (!stored) {
+    showScreen('setup-screen');
+    return;
+  }
+  try {
+    const config = JSON.parse(stored);
+    if (!initFirebase(config)) {
+      showScreen('setup-screen');
+      return;
+    }
+    auth.onAuthStateChanged(user => {
+      if (user) {
+        STATE.user = user;
+        document.getElementById('auth-email-display').textContent = user.email;
+        showScreen('app');
+        loadProjects();
+      } else {
+        showScreen('auth-screen');
+      }
+    });
+  } catch (e) {
+    console.error(e);
+    showScreen('setup-screen');
+  }
+}
+
+function showScreen(id) {
+  const loading = document.getElementById('loading-screen');
+  if (loading) loading.style.display = 'none';
+  ['auth-screen', 'setup-screen', 'app'].forEach(s => {
+    document.getElementById(s).classList.toggle('hidden', s !== id);
+  });
+}
+
+/* ============ SETUP SCREEN ============ */
+document.getElementById('btn-save-config').onclick = () => {
+  const raw = document.getElementById('firebase-config-input').value.trim();
+  let config;
+  try {
+    // Accept both JSON and JS object literal syntax
+    let jsonStr = raw;
+    if (!raw.startsWith('{')) throw new Error('Must start with {');
+    // Convert JS-style keys to JSON if needed
+    jsonStr = raw
+      .replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":')
+      .replace(/'/g, '"')
+      .replace(/,(\s*[}\]])/g, '$1');
+    config = JSON.parse(jsonStr);
+  } catch (e) {
+    toast('Invalid config. Paste the full firebaseConfig object.', true);
+    return;
+  }
+  if (!config.apiKey || !config.databaseURL) {
+    toast('Config must include apiKey and databaseURL', true);
+    return;
+  }
+  localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
+  location.reload();
+};
+
+/* ============ AUTH ============ */
+document.getElementById('btn-signin').onclick = async () => {
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const errEl = document.getElementById('auth-error');
+  errEl.textContent = '';
+  if (!email || !password) { errEl.textContent = 'Email and password required.'; return; }
+  try {
+    await auth.signInWithEmailAndPassword(email, password);
+  } catch (e) {
+    if (e.code === 'auth/user-not-found' || e.code === 'auth/invalid-login-credentials' || e.code === 'auth/invalid-credential') {
+      // try to create
+      try {
+        await auth.createUserWithEmailAndPassword(email, password);
+      } catch (e2) {
+        errEl.textContent = e2.message;
+      }
+    } else {
+      errEl.textContent = e.message;
+    }
+  }
+};
+
+document.getElementById('btn-signout').onclick = () => auth.signOut();
+
+/* ============ NAV ============ */
+function navigateHome() {
+  STATE.projectId = null;
+  STATE.project = null;
+  document.getElementById('view-project').classList.add('hidden');
+  document.getElementById('view-projects').classList.remove('hidden');
+  renderBreadcrumb();
+  loadProjects();
+}
+
+function renderBreadcrumb() {
+  const bc = document.getElementById('breadcrumb');
+  if (!STATE.project) {
+    bc.innerHTML = '<span class="current">All Projects</span>';
+  } else {
+    bc.innerHTML = `
+      <button onclick="navigateHome()">Projects</button>
+      <span class="sep">/</span>
+      <span class="current">${esc(STATE.project.title)}</span>
+    `;
+  }
+}
+
+/* ============ DB HELPERS ============ */
+function uid() { return STATE.user.uid; }
+function projectsRef() { return db.ref(`users/${uid()}/projects`); }
+function projectRef(pid) { return db.ref(`users/${uid()}/projects/${pid}`); }
+function entityRef(pid, type) { return db.ref(`users/${uid()}/data/${pid}/${type}`); }
+
+/* ============ PROJECTS ============ */
+async function loadProjects() {
+  const grid = document.getElementById('projects-grid');
+  const snap = await projectsRef().once('value');
+  const data = snap.val() || {};
+  const entries = Object.entries(data).sort((a, b) => (b[1].updatedAt || 0) - (a[1].updatedAt || 0));
+  document.getElementById('projects-count').textContent = `${entries.length} ITEM${entries.length === 1 ? '' : 'S'}`;
+
+  const newCard = `
+    <button class="new-project-card" onclick="openProjectForm()">
+      <div class="plus">+</div>
+      <span>New Project</span>
+    </button>
+  `;
+
+  if (entries.length === 0) {
+    grid.innerHTML = newCard;
+    return;
+  }
+
+  grid.innerHTML = entries.map(([id, p]) => `
+    <button class="project-card" onclick="openProject('${id}')">
+      <span class="tag">${esc(p.genre || 'UNTITLED GENRE')}</span>
+      <h3>${esc(p.title)}</h3>
+      <p style="color: var(--ink-dim); font-size: 12px; flex: 1; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">${esc(p.logline || 'No logline yet.')}</p>
+      <div class="stats">
+        <span><strong>${p.counts?.characters || 0}</strong>Cast</span>
+        <span><strong>${p.counts?.locations || 0}</strong>Sets</span>
+        <span><strong>${p.counts?.scenes || 0}</strong>Scenes</span>
+      </div>
+    </button>
+  `).join('') + newCard;
+}
+
+function openProjectForm(projectId) {
+  STATE.editingType = 'project';
+  STATE.editingId = projectId || null;
+
+  const p = projectId ? STATE.project : { title: '', logline: '', genre: '' };
+  document.getElementById('drawer-project-title').textContent = projectId ? 'Edit Project' : 'New Project';
+  document.getElementById('project-form-title').value = p.title || '';
+  document.getElementById('project-form-logline').value = p.logline || '';
+  document.getElementById('project-form-genre').value = p.genre || '';
+
+  openDrawer('drawer-project');
+}
+
+document.getElementById('project-form-save').onclick = async () => {
+  const title = document.getElementById('project-form-title').value.trim();
+  if (!title) { toast('Title is required', true); return; }
+  const payload = {
+    title,
+    logline: document.getElementById('project-form-logline').value.trim(),
+    genre: document.getElementById('project-form-genre').value.trim(),
+    updatedAt: Date.now()
+  };
+
+  try {
+    if (STATE.editingId) {
+      await projectRef(STATE.editingId).update(payload);
+      STATE.project = { ...STATE.project, ...payload };
+      document.getElementById('project-title').textContent = title;
+      document.getElementById('project-eyebrow').textContent = payload.genre || 'PROJECT';
+      renderBreadcrumb();
+    } else {
+      payload.createdAt = Date.now();
+      payload.counts = { characters: 0, locations: 0, scenes: 0 };
+      const ref = await projectsRef().push(payload);
+      STATE.projectId = ref.key;
+      await openProject(ref.key);
+    }
+    closeAllDrawers();
+    toast('Project saved.');
+    if (!STATE.projectId) loadProjects();
+  } catch (e) {
+    console.error(e);
+    toast('Failed to save: ' + e.message, true);
+  }
+};
+
+async function openProject(projectId) {
+  STATE.projectId = projectId;
+  const snap = await projectRef(projectId).once('value');
+  STATE.project = snap.val();
+  if (!STATE.project) { toast('Project not found', true); return; }
+
+  document.getElementById('view-projects').classList.add('hidden');
+  document.getElementById('view-project').classList.remove('hidden');
+  document.getElementById('project-title').textContent = STATE.project.title;
+  document.getElementById('project-eyebrow').textContent = STATE.project.genre || 'PROJECT';
+
+  const created = STATE.project.createdAt ? new Date(STATE.project.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
+  document.getElementById('project-meta').innerHTML = `
+    <span>Created ${created}</span>
+    ${STATE.project.logline ? `<span style="font-style: italic; font-family: Fraunces, serif; text-transform: none; letter-spacing: 0;">"${esc(STATE.project.logline)}"</span>` : ''}
+  `;
+
+  renderBreadcrumb();
+  switchTab('characters');
+  loadEntities();
+}
+
+async function deleteCurrentProject() {
+  if (!confirm(`Delete project "${STATE.project.title}" and all its data? This cannot be undone.`)) return;
+  try {
+    await projectRef(STATE.projectId).remove();
+    await db.ref(`users/${uid()}/data/${STATE.projectId}`).remove();
+    toast('Project deleted.');
+    navigateHome();
+  } catch (e) {
+    toast('Delete failed: ' + e.message, true);
+  }
+}
+
+/* ============ TABS ============ */
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.onclick = () => switchTab(btn.dataset.tab);
+});
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+  document.getElementById('tab-' + name).classList.remove('hidden');
+}
+
+/* ============ ENTITIES LOAD ============ */
+async function loadEntities() {
+  const pid = STATE.projectId;
+  const [cSnap, lSnap, sSnap] = await Promise.all([
+    entityRef(pid, 'characters').once('value'),
+    entityRef(pid, 'locations').once('value'),
+    entityRef(pid, 'scenes').once('value')
+  ]);
+  STATE.characters = cSnap.val() || {};
+  STATE.locations = lSnap.val() || {};
+  STATE.scenes = sSnap.val() || {};
+
+  renderCharacters();
+  renderLocations();
+  renderScenes();
+  updateCounts();
+}
+
+function updateCounts() {
+  const c = Object.keys(STATE.characters).length;
+  const l = Object.keys(STATE.locations).length;
+  const s = Object.keys(STATE.scenes).length;
+  document.getElementById('badge-characters').textContent = c;
+  document.getElementById('badge-locations').textContent = l;
+  document.getElementById('badge-scenes').textContent = s;
+  projectRef(STATE.projectId).update({ counts: { characters: c, locations: l, scenes: s } });
+}
+
+/* ============ CHARACTERS ============ */
+function renderCharacters() {
+  const list = document.getElementById('characters-list');
+  const entries = Object.entries(STATE.characters);
+  if (entries.length === 0) {
+    list.innerHTML = `
+      <div class="empty-state">
+        <h3>Cast the film.</h3>
+        <p>Add each character once — name, description, personality, reference photo. You'll reference them by name in every scene.</p>
+        <button class="btn primary" onclick="openCharacterForm()">Add First Character</button>
+      </div>
+    `;
+    return;
+  }
+  list.innerHTML = entries.map(([id, c]) => `
+    <button class="entity-card" onclick="openCharacterForm('${id}')" style="margin-bottom: 12px;">
+      <div class="thumb ${!c.photoUrl ? 'empty' : ''}" ${c.photoUrl ? `style="background-image:url('${esc(c.photoUrl)}')"` : ''}></div>
+      <div class="body">
+        <h4>${esc(c.name)}</h4>
+        <div class="desc">${esc(c.appearance || c.personality || 'No description.')}</div>
+      </div>
+    </button>
+  `).join('');
+}
+
+function openCharacterForm(characterId) {
+  STATE.editingType = 'character';
+  STATE.editingId = characterId || null;
+  STATE.pendingImage = null;
+  STATE.pendingImagePreview = null;
+
+  const c = characterId ? STATE.characters[characterId] : {};
+  document.getElementById('drawer-character-title').textContent = characterId ? 'Edit Character' : 'New Character';
+  document.getElementById('char-form-name').value = c.name || '';
+  document.getElementById('char-form-appearance').value = c.appearance || '';
+  document.getElementById('char-form-personality').value = c.personality || '';
+  document.getElementById('char-form-voice').value = c.voice || '';
+
+  setUploadPreview('char-upload-label', c.photoUrl || null);
+  document.getElementById('char-form-delete').classList.toggle('hidden', !characterId);
+
+  openDrawer('drawer-character');
+}
+
+document.getElementById('char-form-photo').onchange = (e) => {
+  const f = e.target.files[0];
+  if (!f) return;
+  STATE.pendingImage = f;
+  const reader = new FileReader();
+  reader.onload = () => {
+    STATE.pendingImagePreview = reader.result;
+    setUploadPreview('char-upload-label', reader.result);
+  };
+  reader.readAsDataURL(f);
+};
+
+document.getElementById('char-form-save').onclick = async () => {
+  const name = document.getElementById('char-form-name').value.trim();
+  if (!name) { toast('Name required', true); return; }
+  const btn = document.getElementById('char-form-save');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loader"></span> Saving...';
+
+  try {
+    const pid = STATE.projectId;
+    const id = STATE.editingId || entityRef(pid, 'characters').push().key;
+
+    let photoUrl = STATE.characters[id]?.photoUrl || null;
+    if (STATE.pendingImage) {
+      const path = `users/${uid()}/data/${pid}/characters/${id}.jpg`;
+      const ref = storage.ref(path);
+      await ref.put(STATE.pendingImage);
+      photoUrl = await ref.getDownloadURL();
+    }
+
+    const payload = {
+      name,
+      appearance: document.getElementById('char-form-appearance').value.trim(),
+      personality: document.getElementById('char-form-personality').value.trim(),
+      voice: document.getElementById('char-form-voice').value.trim(),
+      photoUrl,
+      updatedAt: Date.now()
+    };
+
+    await entityRef(pid, 'characters').child(id).update(payload);
+    STATE.characters[id] = { ...STATE.characters[id], ...payload };
+    renderCharacters();
+    updateCounts();
+    closeAllDrawers();
+    toast('Character saved.');
+  } catch (e) {
+    toast('Save failed: ' + e.message, true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Save Character';
+  }
+};
+
+document.getElementById('char-form-delete').onclick = async () => {
+  if (!confirm('Delete this character?')) return;
+  await entityRef(STATE.projectId, 'characters').child(STATE.editingId).remove();
+  delete STATE.characters[STATE.editingId];
+  renderCharacters();
+  updateCounts();
+  closeAllDrawers();
+  toast('Character deleted.');
+};
+
+/* ============ LOCATIONS ============ */
+function renderLocations() {
+  const list = document.getElementById('locations-list');
+  const entries = Object.entries(STATE.locations);
+  if (entries.length === 0) {
+    list.innerHTML = `
+      <div class="empty-state">
+        <h3>Scout your sets.</h3>
+        <p>Define each location once. Scenes reuse them, so the visual language stays consistent.</p>
+        <button class="btn primary" onclick="openLocationForm()">Add First Location</button>
+      </div>
+    `;
+    return;
+  }
+  list.innerHTML = entries.map(([id, l]) => `
+    <button class="entity-card" onclick="openLocationForm('${id}')" style="margin-bottom: 12px;">
+      <div class="thumb ${!l.photoUrl ? 'empty' : ''}" ${l.photoUrl ? `style="background-image:url('${esc(l.photoUrl)}')"` : ''}></div>
+      <div class="body">
+        <h4>${esc(l.name)}</h4>
+        <div class="desc">${esc(l.description || l.mood || 'No description.')}</div>
+      </div>
+    </button>
+  `).join('');
+}
+
+function openLocationForm(locationId) {
+  STATE.editingType = 'location';
+  STATE.editingId = locationId || null;
+  STATE.pendingImage = null;
+
+  const l = locationId ? STATE.locations[locationId] : {};
+  document.getElementById('drawer-location-title').textContent = locationId ? 'Edit Location' : 'New Location';
+  document.getElementById('loc-form-name').value = l.name || '';
+  document.getElementById('loc-form-description').value = l.description || '';
+  document.getElementById('loc-form-mood').value = l.mood || '';
+  document.getElementById('loc-form-timeofday').value = l.timeOfDay || '';
+
+  setUploadPreview('loc-upload-label', l.photoUrl || null);
+  document.getElementById('loc-form-delete').classList.toggle('hidden', !locationId);
+  openDrawer('drawer-location');
+}
+
+document.getElementById('loc-form-photo').onchange = (e) => {
+  const f = e.target.files[0];
+  if (!f) return;
+  STATE.pendingImage = f;
+  const reader = new FileReader();
+  reader.onload = () => setUploadPreview('loc-upload-label', reader.result);
+  reader.readAsDataURL(f);
+};
+
+document.getElementById('loc-form-save').onclick = async () => {
+  const name = document.getElementById('loc-form-name').value.trim();
+  if (!name) { toast('Name required', true); return; }
+  const btn = document.getElementById('loc-form-save');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loader"></span> Saving...';
+  try {
+    const pid = STATE.projectId;
+    const id = STATE.editingId || entityRef(pid, 'locations').push().key;
+
+    let photoUrl = STATE.locations[id]?.photoUrl || null;
+    if (STATE.pendingImage) {
+      const path = `users/${uid()}/data/${pid}/locations/${id}.jpg`;
+      const ref = storage.ref(path);
+      await ref.put(STATE.pendingImage);
+      photoUrl = await ref.getDownloadURL();
+    }
+
+    const payload = {
+      name,
+      description: document.getElementById('loc-form-description').value.trim(),
+      mood: document.getElementById('loc-form-mood').value.trim(),
+      timeOfDay: document.getElementById('loc-form-timeofday').value,
+      photoUrl,
+      updatedAt: Date.now()
+    };
+    await entityRef(pid, 'locations').child(id).update(payload);
+    STATE.locations[id] = { ...STATE.locations[id], ...payload };
+    renderLocations();
+    updateCounts();
+    closeAllDrawers();
+    toast('Location saved.');
+  } catch (e) {
+    toast('Save failed: ' + e.message, true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Save Location';
+  }
+};
+
+document.getElementById('loc-form-delete').onclick = async () => {
+  if (!confirm('Delete this location?')) return;
+  await entityRef(STATE.projectId, 'locations').child(STATE.editingId).remove();
+  delete STATE.locations[STATE.editingId];
+  renderLocations();
+  updateCounts();
+  closeAllDrawers();
+  toast('Location deleted.');
+};
+
+/* ============ SCENES ============ */
+function renderScenes() {
+  const list = document.getElementById('scenes-list');
+  const entries = Object.entries(STATE.scenes).sort((a, b) => (a[1].order || 0) - (b[1].order || 0));
+  if (entries.length === 0) {
+    list.innerHTML = `
+      <div class="empty-state">
+        <h3>Write the screenplay.</h3>
+        <p>Each scene is one clip — 5 to 15 seconds. Describe what happens, who's there, how the camera moves, what they say.</p>
+        <button class="btn primary" onclick="openSceneForm()">Add First Scene</button>
+      </div>
+    `;
+    return;
+  }
+  list.innerHTML = entries.map(([id, s], idx) => {
+    const loc = s.locationId ? STATE.locations[s.locationId]?.name : null;
+    const chars = (s.characterIds || []).map(cid => STATE.characters[cid]?.name).filter(Boolean);
+    return `
+      <button class="scene-card" onclick="openSceneForm('${id}')" style="margin-bottom: 12px;">
+        <div class="scene-number">
+          ${String(idx + 1).padStart(2, '0')}
+          <small>SCN</small>
+        </div>
+        <div class="scene-body">
+          <h4>${esc(s.title || 'Untitled scene')}</h4>
+          <div class="scene-meta">
+            ${loc ? `<span>${esc(loc)}</span>` : ''}
+            ${chars.length ? `<span>${chars.map(esc).join(', ')}</span>` : ''}
+            ${s.camera ? `<span>${esc(s.camera)}</span>` : ''}
+          </div>
+          <div class="scene-action">${esc(s.action || '')}</div>
+        </div>
+        <div class="scene-duration">${s.duration || 8}s</div>
+      </button>
+    `;
+  }).join('');
+}
+
+function openSceneForm(sceneId) {
+  STATE.editingType = 'scene';
+  STATE.editingId = sceneId || null;
+
+  const s = sceneId ? STATE.scenes[sceneId] : {};
+  const scenesCount = Object.keys(STATE.scenes).length;
+  const scnNum = sceneId ? (Object.keys(STATE.scenes).indexOf(sceneId) + 1) : (scenesCount + 1);
+
+  document.getElementById('drawer-scene-title').textContent = sceneId ? 'Edit Scene' : 'New Scene';
+  document.getElementById('scene-form-number').textContent = `Scene ${String(scnNum).padStart(2, '0')}`;
+  document.getElementById('scene-form-title').value = s.title || '';
+  document.getElementById('scene-form-duration').value = s.duration || 8;
+  document.getElementById('scene-form-camera').value = s.camera || '';
+  document.getElementById('scene-form-action').value = s.action || '';
+  document.getElementById('scene-form-reactions').value = s.reactions || '';
+  document.getElementById('scene-form-ambient').value = s.ambient || '';
+
+  // Location dropdown
+  const locSel = document.getElementById('scene-form-location');
+  locSel.innerHTML = '<option value="">— Select —</option>' +
+    Object.entries(STATE.locations).map(([id, l]) => `<option value="${id}" ${s.locationId === id ? 'selected' : ''}>${esc(l.name)}</option>`).join('');
+
+  // Character chips
+  const chipBox = document.getElementById('scene-form-characters');
+  const selectedChars = new Set(s.characterIds || []);
+  const charEntries = Object.entries(STATE.characters);
+  if (charEntries.length === 0) {
+    chipBox.innerHTML = '<span class="chip empty-hint">No characters yet — add some first</span>';
+  } else {
+    chipBox.innerHTML = charEntries.map(([id, c]) =>
+      `<span class="chip ${selectedChars.has(id) ? 'active' : ''}" data-id="${id}">${esc(c.name)}</span>`
+    ).join('');
+    chipBox.querySelectorAll('.chip').forEach(chip => {
+      chip.onclick = () => chip.classList.toggle('active');
+    });
+  }
+
+  // Dialogue
+  STATE.dialogueRows = s.dialogue ? [...s.dialogue] : [];
+  renderDialogueRows();
+
+  document.getElementById('scene-form-delete').classList.toggle('hidden', !sceneId);
+  openDrawer('drawer-scene');
+}
+
+function addDialogueRow() {
+  STATE.dialogueRows.push({ characterId: '', line: '' });
+  renderDialogueRows();
+}
+
+function renderDialogueRows() {
+  const box = document.getElementById('scene-form-dialogue');
+  if (STATE.dialogueRows.length === 0) {
+    box.innerHTML = '<div style="color: var(--ink-faint); font-size: 11px; font-style: italic; padding: 8px 0;">No dialogue. Tap + Line to add.</div>';
+    return;
+  }
+  const charOptions = Object.entries(STATE.characters);
+  box.innerHTML = STATE.dialogueRows.map((d, i) => `
+    <div class="dialogue-row">
+      <button type="button" class="remove-dialogue" data-i="${i}">×</button>
+      <select data-i="${i}" class="dialogue-char">
+        <option value="">— Speaker —</option>
+        ${charOptions.map(([id, c]) => `<option value="${id}" ${d.characterId === id ? 'selected' : ''}>${esc(c.name)}</option>`).join('')}
+      </select>
+      <textarea data-i="${i}" class="dialogue-line" placeholder="What do they say?">${esc(d.line || '')}</textarea>
+
+```
+</div>
+```
+
+`).join(’’);
+
+box.querySelectorAll(’.remove-dialogue’).forEach(btn => {
+btn.onclick = () => { STATE.dialogueRows.splice(+btn.dataset.i, 1); renderDialogueRows(); };
+});
+box.querySelectorAll(’.dialogue-char’).forEach(sel => {
+sel.onchange = () => { STATE.dialogueRows[+sel.dataset.i].characterId = sel.value; };
+});
+box.querySelectorAll(’.dialogue-line’).forEach(txt => {
+txt.oninput = () => { STATE.dialogueRows[+txt.dataset.i].line = txt.value; };
+});
+}
+
+document.getElementById(‘scene-form-save’).onclick = async () => {
+const title = document.getElementById(‘scene-form-title’).value.trim();
+const action = document.getElementById(‘scene-form-action’).value.trim();
+if (!title) { toast(‘Scene title required’, true); return; }
+if (!action) { toast(‘Action description required’, true); return; }
+
+const selectedCharIds = […document.querySelectorAll(’#scene-form-characters .chip.active’)].map(c => c.dataset.id);
+const cleanDialogue = STATE.dialogueRows
+.filter(d => d.line && d.line.trim())
+.map(d => ({ characterId: d.characterId || null, line: d.line.trim() }));
+
+const btn = document.getElementById(‘scene-form-save’);
+btn.disabled = true;
+btn.innerHTML = ‘<span class="loader"></span> Saving…’;
+try {
+const pid = STATE.projectId;
+const id = STATE.editingId || entityRef(pid, ‘scenes’).push().key;
+const existingOrder = STATE.scenes[id]?.order;
+const maxOrder = Math.max(0, …Object.values(STATE.scenes).map(s => s.order || 0));
+
+```
+const payload = {
+  title,
+  duration: parseInt(document.getElementById('scene-form-duration').value) || 8,
+  locationId: document.getElementById('scene-form-location').value || null,
+  characterIds: selectedCharIds,
+  camera: document.getElementById('scene-form-camera').value.trim(),
+  action,
+  reactions: document.getElementById('scene-form-reactions').value.trim(),
+  ambient: document.getElementById('scene-form-ambient').value.trim(),
+  dialogue: cleanDialogue,
+  order: existingOrder != null ? existingOrder : maxOrder + 1,
+  updatedAt: Date.now()
+};
+await entityRef(pid, 'scenes').child(id).update(payload);
+STATE.scenes[id] = { ...STATE.scenes[id], ...payload };
+renderScenes();
+updateCounts();
+closeAllDrawers();
+toast('Scene saved.');
+```
+
+} catch (e) {
+toast(’Save failed: ’ + e.message, true);
+} finally {
+btn.disabled = false;
+btn.textContent = ‘Save Scene’;
+}
+};
+
+document.getElementById(‘scene-form-delete’).onclick = async () => {
+if (!confirm(‘Delete this scene?’)) return;
+await entityRef(STATE.projectId, ‘scenes’).child(STATE.editingId).remove();
+delete STATE.scenes[STATE.editingId];
+renderScenes();
+updateCounts();
+closeAllDrawers();
+toast(‘Scene deleted.’);
+};
+
+/* ============ DRAWER UTILS ============ */
+function openDrawer(id) {
+document.getElementById(‘modal-backdrop’).classList.add(‘open’);
+document.getElementById(id).classList.add(‘open’);
+document.body.style.overflow = ‘hidden’;
+}
+function closeAllDrawers() {
+document.getElementById(‘modal-backdrop’).classList.remove(‘open’);
+document.querySelectorAll(’.drawer’).forEach(d => d.classList.remove(‘open’));
+document.body.style.overflow = ‘’;
+STATE.pendingImage = null;
+}
+
+function setUploadPreview(labelId, url) {
+const el = document.getElementById(labelId);
+if (url) {
+el.classList.add(‘has-image’);
+el.style.backgroundImage = `url('${url}')`;
+} else {
+el.classList.remove(‘has-image’);
+el.style.backgroundImage = ‘’;
+}
+}
+
+/* ============ UTILS ============ */
+function esc(s) {
+if (s == null) return ‘’;
+return String(s)
+.replace(/&/g, ‘&’).replace(/</g, ‘<’).replace(/>/g, ‘>’)
+.replace(/”/g, ‘"’).replace(/’/g, ‘'’);
+}
+
+function toast(msg, isError) {
+const el = document.getElementById(‘toast’);
+el.textContent = msg;
+el.classList.toggle(‘error’, !!isError);
+el.classList.add(‘show’);
+setTimeout(() => el.classList.remove(‘show’), 2400);
+}
+
+// Keyboard
+document.addEventListener(‘keydown’, e => {
+if (e.key === ‘Escape’) closeAllDrawers();
+});
+
+bootstrap();
+</script>
+
+</body>
+</html>
