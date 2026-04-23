@@ -1387,7 +1387,7 @@ function esc(s) {
     .split('<').join('&lt;')
     .split('>').join('&gt;')
     .split('\x22').join('&quot;')
-    .split('\'').join('&#39;');
+    .split('\x27').join('&#39;');
 }
 
 function toast(msg, isError) {
@@ -1427,7 +1427,7 @@ function setUploadPreview(labelId, url) {
   var el = $(labelId);
   if (url) {
     el.classList.add('has-image');
-    el.style.backgroundImage = 'url(\'' + url + '\')';
+    el.style.backgroundImage = 'url(\x27' + url + '\x27)';
   } else {
     el.classList.remove('has-image');
     el.style.backgroundImage = '';
@@ -1486,7 +1486,7 @@ function handleSaveConfig() {
     if (raw.charAt(0) !== '{') throw new Error('Must start with {');
     var jsonStr = raw
       .replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1\x22$2\x22:')
-      .replace(/'/g, ''\')
+      .replace(/'/g, '\x22')
       .replace(/,(\s*[}\]])/g, '$1');
     config = JSON.parse(jsonStr);
   } catch (e) {
@@ -1538,12 +1538,12 @@ function navigateHome() {
 function renderBreadcrumb() {
   var bc = $('breadcrumb');
   if (!STATE.project) {
-    bc.innerHTML = \'<span class='current'>All Projects</span>\';
+    bc.innerHTML = '<span class=\x22current\x22>All Projects</span>';
   } else {
     bc.innerHTML =
-      \'<button id='crumb-home'>Projects</button>\' +
-      \'<span class='sep'>/</span>\' +
-      \'<span class='current'>\' + esc(STATE.project.title) + \'</span>\';
+      '<button id=\x22crumb-home\x22>Projects</button>' +
+      '<span class=\x22sep\x22>/</span>' +
+      '<span class=\x22current\x22>' + esc(STATE.project.title) + '</span>';
     var homeBtn = $('crumb-home');
     if (homeBtn) homeBtn.onclick = navigateHome;
   }
@@ -1576,22 +1576,22 @@ function loadProjects() {
       var p = entries[i][1];
       var counts = p.counts || {};
       html +=
-        \'<button class='project-card' data-project-id='' + id + ''>\' +
-          \'<span class='tag'>\' + esc(p.genre || 'UNTITLED GENRE') + \'</span>\' +
-          \'<h3>\' + esc(p.title) + \'</h3>\' +
-          \'<p class='logline'>\' + esc(p.logline || 'No logline yet.') + \'</p>\' +
-          \'<div class='stats'>\' +
-            \'<span><strong>\' + (counts.characters || 0) + \'</strong>Cast</span>\' +
-            \'<span><strong>\' + (counts.locations || 0) + \'</strong>Sets</span>\' +
-            \'<span><strong>\' + (counts.scenes || 0) + \'</strong>Scenes</span>\' +
-          \'</div>\' +
-        \'</button>\';
+        '<button class=\x22project-card\x22 data-project-id=\x22' + id + '\x22>' +
+          '<span class=\x22tag\x22>' + esc(p.genre || 'UNTITLED GENRE') + '</span>' +
+          '<h3>' + esc(p.title) + '</h3>' +
+          '<p class=\x22logline\x22>' + esc(p.logline || 'No logline yet.') + '</p>' +
+          '<div class=\x22stats\x22>' +
+            '<span><strong>' + (counts.characters || 0) + '</strong>Cast</span>' +
+            '<span><strong>' + (counts.locations || 0) + '</strong>Sets</span>' +
+            '<span><strong>' + (counts.scenes || 0) + '</strong>Scenes</span>' +
+          '</div>' +
+        '</button>';
     }
     html +=
-      \'<button class='new-project-card' id='btn-new-project'>\' +
-        \'<div class='plus-big'>+</div>\' +
-        \'<span>New Project</span>\' +
-      \'</button>\';
+      '<button class=\x22new-project-card\x22 id=\x22btn-new-project\x22>' +
+        '<div class=\x22plus-big\x22>+</div>' +
+        '<span>New Project</span>' +
+      '</button>';
 
     grid.innerHTML = html;
 
@@ -1663,8 +1663,8 @@ function openProject(projectId) {
       : '\u2014';
     var metaHtml = '<span>Created ' + createdDate + '</span>';
     if (STATE.project.logline) {
-      metaHtml += \'<span style='font-style:italic;font-family:Fraunces,serif;text-transform:none;letter-spacing:0;'>\' +
-        esc(STATE.project.logline) + \'</span>\';
+      metaHtml += '<span style=\x22font-style:italic;font-family:Fraunces,serif;text-transform:none;letter-spacing:0;\x22>' +
+        esc(STATE.project.logline) + '</span>';
     }
     $('project-meta').innerHTML = metaHtml;
 
@@ -1675,7 +1675,7 @@ function openProject(projectId) {
 }
 
 function deleteCurrentProject() {
-  if (!confirm('Delete project \'' + STATE.project.title + '\x22 and all its data? This cannot be undone.')) return;
+  if (!confirm('Delete project \x22' + STATE.project.title + '\x22 and all its data? This cannot be undone.')) return;
   var pid = STATE.projectId;
   projectRef(pid).remove().then(function () {
     return db.ref('users/' + uid() + '/data/' + pid).remove();
@@ -1746,7 +1746,7 @@ function renderCharacters() {
   for (var i = 0; i < ids.length; i++) {
     var id = ids[i];
     var c = STATE.characters[id];
-    var thumbStyle = c.photoUrl ? ' style=\x22background-image:url(\'' + esc(c.photoUrl) + '\')\x22' : '';
+    var thumbStyle = c.photoUrl ? ' style=\x22background-image:url(\x27' + esc(c.photoUrl) + '\x27)\x22' : '';
     var thumbClass = c.photoUrl ? 'thumb' : 'thumb empty';
     html +=
       '<button class=\x22entity-card\x22 data-char-id=\x22' + id + '\x22>' +
@@ -1856,7 +1856,7 @@ function renderLocations() {
   for (var i = 0; i < ids.length; i++) {
     var id = ids[i];
     var l = STATE.locations[id];
-    var thumbStyle = l.photoUrl ? ' style=\x22background-image:url(\'' + esc(l.photoUrl) + '\')\x22' : '';
+    var thumbStyle = l.photoUrl ? ' style=\x22background-image:url(\x27' + esc(l.photoUrl) + '\x27)\x22' : '';
     var thumbClass = l.photoUrl ? 'thumb' : 'thumb empty';
     html +=
       '<button class=\x22entity-card\x22 data-loc-id=\x22' + id + '\x22>' +
