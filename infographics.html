@@ -708,6 +708,14 @@ var STORYBOARD_SYSTEM_PROMPT = [
   'You are a presentation designer for executive infographic videos.',
   'Given a narrative and data, produce a structured JSON storyboard of scenes.',
   '',
+  'CRITICAL OUTPUT FORMAT:',
+  '- Your entire response must be a single JSON array of scene objects',
+  '- Start your response with [ and end with ]',
+  '- Do NOT wrap the array in an object',
+  '- Do NOT write "{ scenes: [...] }" or similar',
+  '- Do NOT include any prose, explanation, or markdown code fences',
+  '- The response must parse directly with JSON.parse() into an array',
+  '',
   'Available scene types:',
   '- title: Opening title card with big title, subtitle, company name',
   '- headline_number: One huge number with a label and a delta (e.g. "+23% YoY")',
@@ -719,7 +727,6 @@ var STORYBOARD_SYSTEM_PROMPT = [
   '- closing: End frame with company name and optional tagline',
   '',
   'Rules:',
-  '- Return ONLY valid JSON, no prose, no markdown fences',
   '- Total scene durations should sum to approximately the target duration',
   '- Each scene must have: "type", "duration" (seconds), "data" (object with scene-specific fields)',
   '- data for title: {title, subtitle, company}',
@@ -732,7 +739,10 @@ var STORYBOARD_SYSTEM_PROMPT = [
   '- data for closing: {company, tagline}',
   '- First scene should always be "title", last scene should always be "closing"',
   '- Aim for 5-8 scenes for a 60s video, scale proportionally for other durations',
-  '- Numbers should match what user provided; do not invent new figures'
+  '- Numbers should match what user provided; do not invent new figures',
+  '',
+  'Example of correct output format:',
+  '[{"type":"title","duration":5,"data":{"title":"Q3 Results","subtitle":"FY26","company":"Acme"}},{"type":"closing","duration":3,"data":{"company":"Acme","tagline":"Thank you"}}]'
 ].join('\n');
 
 async function generateStoryboard() {
@@ -797,8 +807,22 @@ async function generateStoryboard() {
     catch (e) { throw new Error('Could not parse JSON from Claude. Raw response:\n' + content.substring(0, 800)); }
 
     if (!Array.isArray(storyboard)) {
-      if (storyboard.scenes && Array.isArray(storyboard.scenes)) storyboard = storyboard.scenes;
-      else throw new Error('Expected a JSON array of scenes. Got: ' + typeof storyboard);
+      // Claude sometimes wraps the array in an object. Look for the scene array.
+      var found = null;
+      if (storyboard.scenes && Array.isArray(storyboard.scenes)) found = storyboard.scenes;
+      else if (storyboard.storyboard && Array.isArray(storyboard.storyboard)) found = storyboard.storyboard;
+      else if (storyboard.data && Array.isArray(storyboard.data)) found = storyboard.data;
+      else {
+        // Last resort: look for any array property whose items have a 'type' field (our scene signature)
+        for (var k in storyboard) {
+          if (Array.isArray(storyboard[k]) && storyboard[k].length > 0 && storyboard[k][0] && storyboard[k][0].type) {
+            found = storyboard[k];
+            break;
+          }
+        }
+      }
+      if (found) storyboard = found;
+      else throw new Error('Expected a JSON array of scenes. Claude returned an object with keys: ' + Object.keys(storyboard).join(', ') + '\n\nRaw response (first 600 chars):\n' + content.substring(0, 600));
     }
     if (storyboard.length === 0) throw new Error('Storyboard has no scenes');
 
