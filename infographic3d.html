@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a0a0c">
+<title>Reel 3D - Cinematic Data Stories</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<style>
+:root {
+  --bg: #0a0a0c;
+  --bg-2: #13131a;
+  --bg-3: #1c1c26;
+  --ink: #ede9e0;
+  --ink-dim: #8a8580;
+  --ink-faint: #4a4742;
+  --accent: #d4a44c;
+  --accent-hot: #e8b85a;
+  --blue: #3b82f6;
+  --green: #10b981;
+  --red: #ef4444;
+  --line: rgba(237, 233, 224, 0.08);
+  --line-strong: rgba(237, 233, 224, 0.16);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { background: var(--bg); color: var(--ink); font-family: 'Inter', system-ui, sans-serif; font-size: 14px; line-height: 1.55; min-height: 100vh; }
+h1, h2, h3 { font-family: 'Cormorant Garamond', serif; font-weight: 400; letter-spacing: -0.01em; line-height: 1.1; }
+.mono-label { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-dim); font-weight: 600; }
+.mono-label.accent { color: var(--accent); }
+.hidden { display: none !important; }
+
+#loading-screen { position: fixed; inset: 0; background: var(--bg); display: grid; place-items: center; z-index: 9999; }
+.spinner { width: 32px; height: 32px; border: 2px solid #2a2a35; border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--ink-faint); text-align: center; }
+
+#auth-screen { min-height: 100vh; display: grid; grid-template-columns: 1fr 460px; }
+@media (max-width: 900px) { #auth-screen { grid-template-columns: 1fr; } .auth-left { display: none; } .auth-card { border-left: none !important; padding: 48px 24px !important; } }
+.auth-left { background: #0f0f14; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 60px; position: relative; overflow: hidden; border-right: 1px solid var(--line); }
+.auth-left::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 70% 50% at 30% 40%, rgba(212,164,76,.12) 0%, transparent 70%), radial-gradient(ellipse 50% 40% at 75% 70%, rgba(59,130,246,.08) 0%, transparent 60%); pointer-events: none; }
+.auth-left-content { position: relative; z-index: 1; text-align: center; }
+.auth-brand-big { font-family: 'Cormorant Garamond', serif; font-size: clamp(80px, 12vw, 160px); font-weight: 300; font-style: italic; color: var(--accent); line-height: 1; letter-spacing: -.02em; text-shadow: 0 0 80px rgba(212,164,76,.25); margin-bottom: 18px; display: block; }
+.auth-tagline { font-size: 11px; letter-spacing: 0.28em; text-transform: uppercase; color: #3a3a48; }
+.auth-card { background: var(--bg); display: flex; flex-direction: column; justify-content: center; padding: 60px 48px; min-height: 100vh; border-left: 1px solid var(--line); }
+.auth-card h1 { font-size: 40px; color: var(--ink); margin-bottom: 6px; }
+.auth-card h1 em { color: var(--accent); font-style: italic; }
+.auth-card > .mono-label { margin-bottom: 8px; }
+.auth-card > .muted { margin-bottom: 32px; font-size: 13px; line-height: 1.7; color: var(--ink-dim); }
+
+.field { margin-bottom: 20px; }
+.field label { display: block; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-dim); font-weight: 600; margin-bottom: 8px; }
+.field label .req { color: var(--red); margin-left: 3px; }
+.field input[type="text"], .field input[type="password"], .field textarea, .field select { width: 100%; background: var(--bg-2); border: 1px solid var(--line-strong); color: var(--ink); padding: 12px 14px; font: inherit; font-family: 'Inter', sans-serif; font-size: 13px; transition: border-color 0.2s; border-radius: 6px; }
+.field textarea { min-height: 110px; resize: vertical; line-height: 1.7; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+.field input:focus, .field textarea:focus, .field select:focus { outline: none; border-color: var(--accent); }
+.field .hint { margin-top: 6px; font-size: 11px; color: var(--ink-faint); line-height: 1.5; }
+
+input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus { -webkit-box-shadow: 0 0 0 1000px var(--bg-2) inset !important; -webkit-text-fill-color: var(--ink) !important; caret-color: var(--ink) !important; transition: background-color 86400s ease 0s !important; }
+
+.error-text { color: var(--red); margin-top: 12px; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; min-height: 14px; }
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+.btn { display: inline-flex; align-items: center; gap: 10px; background: var(--ink); color: var(--bg); border: none; padding: 12px 22px; font: inherit; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; cursor: pointer; font-weight: 700; border-radius: 6px; transition: all 0.2s; }
+.btn:hover { background: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--bg); }
+.btn.primary:hover { background: var(--accent-hot); }
+.btn.ghost { background: transparent; border: 1px solid var(--line-strong); color: var(--ink); }
+.btn.ghost:hover { border-color: var(--accent); color: var(--accent); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn.wide-btn { width: 100%; justify-content: center; padding: 14px; font-size: 12px; }
+.btn.tiny { padding: 6px 12px; font-size: 10px; }
+.btn .loader { display: inline-block; width: 12px; height: 12px; border: 1.5px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: spin 0.7s linear infinite; }
+
+.topbar { display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; border-bottom: 1px solid var(--line); background: var(--bg); position: sticky; top: 0; z-index: 50; backdrop-filter: blur(12px); }
+.brand { font-family: 'Cormorant Garamond', serif; font-size: 24px; font-style: italic; color: var(--accent); letter-spacing: -0.02em; }
+.brand-sub { font-size: 9px; letter-spacing: 0.25em; text-transform: uppercase; color: var(--ink-faint); margin-left: 14px; font-weight: 600; }
+.top-right { display: flex; align-items: center; gap: 12px; }
+.chip { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-dim); display: flex; align-items: center; gap: 6px; }
+.chip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ink-faint); }
+.chip.live .dot { background: var(--green); box-shadow: 0 0 8px var(--green); }
+
+main { max-width: 1400px; margin: 0 auto; padding: 32px 24px 80px; display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+@media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+
+.input-panel h2, .preview-panel h2 { font-size: 32px; margin-bottom: 6px; font-style: italic; }
+.input-panel > p, .preview-panel > p { color: var(--ink-dim); font-size: 13px; margin-bottom: 28px; line-height: 1.7; }
+
+/* File upload */
+.file-drop {
+  border: 2px dashed var(--line-strong);
+  border-radius: 8px;
+  padding: 28px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--bg-2);
+}
+.file-drop:hover { border-color: var(--accent); }
+.file-drop.has-file { border-style: solid; background: var(--bg-3); }
+.file-drop input { display: none; }
+.file-drop .icon { font-family: 'Cormorant Garamond', serif; font-size: 36px; font-weight: 300; color: var(--ink-faint); display: block; margin-bottom: 6px; }
+.file-drop.has-file .icon { color: var(--accent); }
+.file-drop span { font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--ink-dim); }
+.file-drop .filename { color: var(--accent); font-weight: 600; }
+
+/* Data preview */
+.data-preview {
+  margin-top: 12px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 12px;
+  max-height: 200px;
+  overflow: auto;
+}
+.data-preview table { border-collapse: collapse; font-family: 'JetBrains Mono', monospace; font-size: 11px; width: 100%; }
+.data-preview th { text-align: left; padding: 6px 10px; color: var(--accent); background: var(--bg); position: sticky; top: 0; }
+.data-preview td { padding: 4px 10px; color: var(--ink-dim); border-bottom: 1px solid var(--line); }
+.data-preview tr:hover td { color: var(--ink); }
+
+/* 3D preview stage */
+.preview-stage {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #050508;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+}
+.preview-stage canvas { width: 100%; height: 100%; display: block; }
+.preview-empty { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 40px; color: var(--ink-dim); }
+.preview-empty .icon { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 64px; color: var(--ink-faint); margin-bottom: 10px; }
+
+.scene-controls { margin-top: 16px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.scene-controls .mono-label { flex: 1; }
+
+.section-hr { height: 1px; background: var(--line); margin: 28px 0; }
+
+/* Settings */
+.modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(4px); z-index: 100; display: none; }
+.modal-backdrop.open { display: block; }
+.settings-box { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--bg-2); border: 1px solid var(--line-strong); border-radius: 10px; max-width: 480px; width: calc(100vw - 48px); padding: 32px; z-index: 101; display: none; }
+.settings-box.open { display: block; }
+.settings-box h3 { font-size: 26px; font-style: italic; margin-bottom: 12px; }
+.settings-box p { color: var(--ink-dim); font-size: 13px; margin-bottom: 18px; line-height: 1.7; }
+.settings-box code { background: var(--bg); padding: 2px 8px; color: var(--accent); font-size: 11px; border-radius: 3px; }
+.settings-box .row-buttons { display: flex; gap: 10px; margin-top: 18px; }
+
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--ink); color: var(--bg); padding: 12px 22px; font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; font-weight: 600; z-index: 200; transition: transform 0.3s; border-radius: 6px; }
+.toast.show { transform: translateX(-50%) translateY(0); }
+.toast.error { background: var(--red); color: #fff; }
+
+#fatal-error { position: fixed; inset: 0; background: #160808; color: #ffb3b3; padding: 40px 24px; z-index: 300; overflow: auto; }
+#fatal-error h2 { font-size: 32px; color: #ff6b6b; margin-bottom: 16px; }
+#fatal-error pre { background: #000; padding: 16px; border: 1px solid #333; white-space: pre-wrap; word-break: break-word; margin: 12px 0; font-family: monospace; font-size: 12px; }
+
+.json-viewer { margin-top: 24px; background: var(--bg-2); border: 1px solid var(--line); border-radius: 6px; padding: 14px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-dim); max-height: 200px; overflow: auto; white-space: pre-wrap; word-break: break-word; }
+
+.render-status { padding: 10px 14px; background: var(--bg-3); border-radius: 6px; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-dim); margin-top: 12px; }
+.render-status.active { background: rgba(212,164,76,0.12); color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div id="loading-screen">
+  <div>
+    <div class="spinner"></div>
+    <div class="loading-text">Connecting</div>
+  </div>
+</div>
+
+<div id="fatal-error" class="hidden">
+  <h2>Startup Error</h2>
+  <pre id="fatal-error-msg"></pre>
+</div>
+
+<div id="auth-screen" class="hidden">
+  <div class="auth-left">
+    <div class="auth-left-content">
+      <span class="auth-brand-big">Reel 3D.</span>
+      <p class="auth-tagline">Cinematic data stories</p>
+    </div>
+  </div>
+  <div class="auth-card">
+    <h1><em>Sign in</em> to build.</h1>
+    <p class="mono-label">REEL 3D</p>
+    <p class="muted">Same account as your other Reel tools. Upload Excel data, describe your vision, get cinematic 3D visualizations.</p>
+    <div class="field">
+      <label>Email</label>
+      <input type="text" id="auth-email" autocomplete="email" inputmode="email">
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="auth-password" autocomplete="current-password">
+    </div>
+    <button class="btn primary wide-btn" id="btn-signin">Sign In</button>
+    <p id="auth-error" class="error-text"></p>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+  <header class="topbar">
+    <div>
+      <span class="brand">Reel 3D.</span>
+      <span class="brand-sub">CINEMATIC DATA</span>
+    </div>
+    <div class="top-right">
+      <div class="chip" id="api-chip">
+        <div class="dot"></div>
+        <span id="api-status">...</span>
+      </div>
+      <div class="chip">
+        <span id="user-email">-</span>
+      </div>
+      <button class="btn ghost tiny" id="btn-settings">Key</button>
+      <button class="btn ghost tiny" id="btn-signout">Out</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="input-panel">
+      <span class="mono-label accent">Step 01</span>
+      <h2>Upload <em style="color:var(--accent);">data</em>.</h2>
+      <p>Upload an Excel or CSV file. First sheet, first row is headers. Or paste data below.</p>
+
+      <div class="field">
+        <label>Excel / CSV File</label>
+        <label class="file-drop" id="file-drop">
+          <input type="file" id="file-input" accept=".xlsx,.xls,.csv">
+          <span class="icon">+</span>
+          <span id="file-drop-label">Tap to upload .xlsx or .csv</span>
+        </label>
+      </div>
+
+      <div id="data-preview-wrapper" class="hidden">
+        <div class="mono-label" style="margin-bottom: 8px;">Parsed data preview</div>
+        <div class="data-preview" id="data-preview"></div>
+      </div>
+
+      <div class="section-hr"></div>
+
+      <span class="mono-label accent">Step 02</span>
+      <h2>Describe your <em style="color:var(--accent);">vision</em>.</h2>
+      <p>Tell Claude what this data means and how you want it shown. Be as specific or as loose as you like.</p>
+
+      <div class="field">
+        <label>Presentation title</label>
+        <input type="text" id="pres-title" placeholder="Q3 P&L Walkthrough">
+      </div>
+
+      <div class="field">
+        <label>What this data is <span class="req">*</span></label>
+        <textarea id="pres-narrative" placeholder="Example: This is our Q3 P&L. Top line is Total Income. Then COGS, leaving Gross Profit. Then operating expenses, getting to EBIT. Then interest and taxes, landing at Net Revenue. I want to show the story of how every rupee of income gets reduced to final profit."></textarea>
+      </div>
+
+      <div class="field">
+        <label>Creative direction (the "how")</label>
+        <textarea id="pres-direction" placeholder="Example: Build this like a waterfall, starting from the top with a big bar. Each cost line should drop down from the previous, cutting the height. Contribution and Gross Profit should glow. Camera should orbit slowly around the bars. End with a close-up of the final Net Revenue number rising dramatically."></textarea>
+        <div class="hint">Optional but powerful. Claude uses this to pick scene types and set the mood. If left blank, Claude decides.</div>
+      </div>
+
+      <div class="section-hr"></div>
+
+      <button class="btn primary wide-btn" id="btn-generate">
+        <span id="gen-btn-text">Generate 3D Visualization</span>
+      </button>
+    </section>
+
+    <section class="preview-panel">
+      <span class="mono-label accent">Step 03</span>
+      <h2>Preview your <em style="color:var(--accent);">movie</em>.</h2>
+      <p>3D scenes render in real time. Drag to orbit the camera, pinch to zoom.</p>
+
+      <div class="preview-stage" id="preview-stage">
+        <div class="preview-empty" id="preview-empty">
+          <div>
+            <div class="icon">+</div>
+            <div class="mono-label">No scene yet</div>
+            <p style="margin-top:10px;font-size:12px;">Upload data and hit generate.</p>
+          </div>
+        </div>
+        <canvas id="three-canvas" class="hidden"></canvas>
+      </div>
+
+      <div class="scene-controls hidden" id="scene-controls">
+        <span class="mono-label" id="scene-info">Scene loaded</span>
+        <button class="btn ghost tiny" id="btn-replay">Replay</button>
+        <button class="btn ghost tiny" id="btn-reset-camera">Reset view</button>
+      </div>
+
+      <div class="render-status" id="render-status"></div>
+
+      <div class="json-viewer hidden" id="json-viewer"></div>
+    </section>
+  </main>
+</div>
+
+<div class="modal-backdrop" id="settings-backdrop"></div>
+<div class="settings-box" id="settings-box">
+  <h3>Anthropic API Key</h3>
+  <p>Used for storyboard generation. Get a key from <code>console.anthropic.com</code>.</p>
+  <p>Shared with your other Reel tools via your Firebase profile.</p>
+  <div class="field">
+    <label>Anthropic API Key</label>
+    <input type="password" id="api-key-input" placeholder="sk-ant-...">
+  </div>
+  <div class="row-buttons">
+    <button class="btn ghost wide-btn" id="btn-settings-cancel">Cancel</button>
+    <button class="btn primary wide-btn" id="btn-settings-save">Save Key</button>
+  </div>
+</div>
+
+<div class="toast" id="toast">Ready</div>
+
+<script>
+window.addEventListener('error', function(e) {
+  showFatalError((e.message || 'Error') + '\nFile: ' + (e.filename || '?') + '\nLine: ' + (e.lineno || '?') + '\n\n' + (e.error && e.error.stack ? e.error.stack : ''));
+});
+window.addEventListener('unhandledrejection', function(e) {
+  showFatalError('Promise rejected: ' + (e.reason && e.reason.message ? e.reason.message : e.reason) + '\n\n' + (e.reason && e.reason.stack ? e.reason.stack : ''));
+});
+function showFatalError(msg) {
+  var el = document.getElementById('fatal-error');
+  var det = document.getElementById('fatal-error-msg');
+  if (el && det) { el.classList.remove('hidden'); det.textContent = msg; }
+}
+function $(id) { return document.getElementById(id); }
+function toast(msg, isError) {
+  var el = $('toast');
+  el.textContent = msg;
+  if (isError) el.classList.add('error'); else el.classList.remove('error');
+  el.classList.add('show');
+  setTimeout(function(){ el.classList.remove('show'); }, 2600);
+}
+function showScreen(id) {
+  var loading = $('loading-screen');
+  if (loading) loading.style.display = 'none';
+  ['auth-screen', 'app'].forEach(function(s){
+    var el = $(s); if (!el) return;
+    if (s === id) el.classList.remove('hidden');
+    else el.classList.add('hidden');
+  });
+}
+
+var STATE = { user: null, apiKey: null, parsedData: null, storyboard: null };
+var db = null;
+var auth = null;
+
+var FB_CONFIG = {
+  apiKey: 'AIzaSyDovy8Pqg4a7Gm1ZJ7ix6F1-b90sqo-nrY',
+  authDomain: 'reel-studio-46495.firebaseapp.com',
+  databaseURL: 'https://reel-studio-46495-default-rtdb.asia-southeast1.firebasedatabase.app',
+  projectId: 'reel-studio-46495',
+  storageBucket: 'reel-studio-46495.firebasestorage.app',
+  messagingSenderId: '1088923527470',
+  appId: '1:1088923527470:web:6fbf1915840044a29572bf'
+};
+
+function initFirebase() {
+  try {
+    firebase.initializeApp(FB_CONFIG);
+    auth = firebase.auth();
+    db = firebase.database();
+    return true;
+  } catch (e) { console.error('Firebase init failed', e); return false; }
+}
+
+function bootstrap() {
+  if (!initFirebase()) { showFatalError('Could not connect to Firebase.'); return; }
+  auth.onAuthStateChanged(function(user) {
+    if (user) {
+      STATE.user = user;
+      $('user-email').textContent = user.email;
+      loadApiKeyFromDb().then(function() { showScreen('app'); updateApiStatus(); })
+        .catch(function() { showScreen('app'); updateApiStatus(); });
+    } else {
+      showScreen('auth-screen');
+    }
+  });
+}
+
+function keyRef() { return db.ref('users/' + STATE.user.uid + '/settings/anthropic_api_key'); }
+function loadApiKeyFromDb() { return keyRef().once('value').then(function(snap) { STATE.apiKey = snap.val() || null; }); }
+function saveApiKeyToDb(key) { return keyRef().set(key).then(function() { STATE.apiKey = key; updateApiStatus(); }); }
+function updateApiStatus() {
+  var chip = $('api-chip'); var status = $('api-status');
+  if (STATE.apiKey) { chip.classList.add('live'); status.textContent = 'KEY SET'; }
+  else { chip.classList.remove('live'); status.textContent = 'NO KEY'; }
+}
+
+function handleSignIn() {
+  var email = $('auth-email').value.trim();
+  var password = $('auth-password').value;
+  var errEl = $('auth-error');
+  errEl.textContent = '';
+  if (!email || !password) { errEl.textContent = 'Email and password required.'; return; }
+  var btn = $('btn-signin');
+  btn.disabled = true; btn.innerHTML = '<span class="loader"></span> Signing in';
+  auth.signInWithEmailAndPassword(email, password).catch(function(e) {
+    var code = e.code || '';
+    if (code === 'auth/user-not-found' || code === 'auth/invalid-login-credentials' || code === 'auth/invalid-credential') {
+      auth.createUserWithEmailAndPassword(email, password).catch(function(e2) {
+        errEl.textContent = e2.message; btn.disabled = false; btn.innerHTML = 'Sign In';
+      });
+    } else {
+      errEl.textContent = e.message; btn.disabled = false; btn.innerHTML = 'Sign In';
+    }
+  });
+}
+$('btn-signin').onclick = handleSignIn;
+$('auth-password').addEventListener('keypress', function(e) { if (e.key === 'Enter') handleSignIn(); });
+$('btn-signout').onclick = function() { auth.signOut(); };
+
+function openSettings() { $('api-key-input').value = STATE.apiKey || ''; $('settings-backdrop').classList.add('open'); $('settings-box').classList.add('open'); }
+function closeSettings() { $('settings-backdrop').classList.remove('open'); $('settings-box').classList.remove('open'); }
+$('btn-settings').onclick = openSettings;
+$('btn-settings-cancel').onclick = closeSettings;
+$('settings-backdrop').onclick = closeSettings;
+$('btn-settings-save').onclick = function() {
+  var key = $('api-key-input').value.trim();
+  if (key && !key.startsWith('sk-ant-')) { toast('Key must start with sk-ant-', true); return; }
+  var btn = $('btn-settings-save');
+  btn.disabled = true; btn.innerHTML = '<span class="loader"></span> Saving';
+  saveApiKeyToDb(key || null).then(function() { closeSettings(); toast(key ? 'Key saved' : 'Key cleared'); })
+    .catch(function(e) { toast('Save failed: ' + e.message, true); })
+    .finally(function() { btn.disabled = false; btn.textContent = 'Save Key'; });
+};
+
+/* ============ FILE UPLOAD / PARSING ============ */
+$('file-input').onchange = function(e) {
+  var f = e.target.files[0];
+  if (!f) return;
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      var data = new Uint8Array(ev.target.result);
+      var workbook = XLSX.read(data, { type: 'array' });
+      var firstSheet = workbook.SheetNames[0];
+      var sheet = workbook.Sheets[firstSheet];
+      var rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+      if (!rows || rows.length === 0) { toast('File is empty', true); return; }
+
+      var headers = rows[0].map(function(h) { return String(h).trim() || 'Col'; });
+      var body = rows.slice(1).filter(function(r) { return r.some(function(c) { return c !== '' && c != null; }); });
+
+      STATE.parsedData = { headers: headers, rows: body, sheet_name: firstSheet };
+
+      $('file-drop').classList.add('has-file');
+      $('file-drop-label').innerHTML = '<span class="filename">' + f.name + '</span><br>' + body.length + ' rows';
+
+      // Build preview
+      var html = '<table><thead><tr>';
+      for (var h = 0; h < headers.length; h++) html += '<th>' + escapeHtml(headers[h]) + '</th>';
+      html += '</tr></thead><tbody>';
+      var previewRows = body.slice(0, 20);
+      for (var r = 0; r < previewRows.length; r++) {
+        html += '<tr>';
+        for (var c = 0; c < headers.length; c++) html += '<td>' + escapeHtml(previewRows[r][c] != null ? previewRows[r][c] : '') + '</td>';
+        html += '</tr>';
+      }
+      html += '</tbody></table>';
+      if (body.length > 20) html += '<div style="color:var(--ink-faint);font-size:10px;padding:6px;">(' + (body.length - 20) + ' more rows not shown)</div>';
+      $('data-preview').innerHTML = html;
+      $('data-preview-wrapper').classList.remove('hidden');
+      toast('Loaded ' + body.length + ' rows');
+    } catch (err) {
+      console.error(err);
+      toast('Could not parse file: ' + err.message, true);
+    }
+  };
+  reader.onerror = function() { toast('Could not read file', true); };
+  reader.readAsArrayBuffer(f);
+};
+
+function escapeHtml(s) {
+  return String(s == null ? '' : s)
+    .split('&').join('&amp;').split('<').join('&lt;').split('>').join('&gt;')
+    .split('"').join('&quot;').split("'").join('&#39;');
+}
+
+/* ============ STORYBOARD GENERATION ============ */
+var STORYBOARD_SYSTEM_PROMPT = [
+  'You are a 3D cinematic data visualization director.',
+  'You turn numeric data into structured scene plans that a Three.js renderer executes.',
+  '',
+  'CRITICAL OUTPUT FORMAT:',
+  '- Your entire response must be a single JSON array of scene objects.',
+  '- Start with [ and end with ].',
+  '- No prose, no markdown fences, no wrapping object.',
+  '',
+  'AVAILABLE 3D SCENE TYPES (Phase 1):',
+  '',
+  'waterfall_3d: A P&L or bridge waterfall in 3D. Stacked blocks showing how a starting value is reduced (or increased) to arrive at a final value.',
+  '  data: {',
+  '    title: string,',
+  '    subtitle: string (optional),',
+  '    steps: [{',
+  '      label: string,           // short label, max 24 chars',
+  '      value: number,           // positive = addition or total, negative = subtraction',
+  '      kind: "start"|"add"|"subtract"|"total"|"end"',
+  '      // "start" = opening bar (full height)',
+  '      // "add" = adds to running total (positive)',
+  '      // "subtract" = removes from running total (negative)',
+  '      // "total" = intermediate subtotal bar (full height at that point)',
+  '      // "end" = final total bar',
+  '      highlight: boolean (optional) - glow this bar',
+  '    }],',
+  '    unit: string (e.g. "Rs Cr", "%", ""),',
+  '    prefix: string (e.g. "Rs ", "$")',
+  '  }',
+  '',
+  'title_3d: Title card in 3D space with the title floating in camera view, optional subtitle and company.',
+  '  data: {title, subtitle, company}',
+  '',
+  'headline_3d: One huge 3D-extruded number with a label and delta badge.',
+  '  data: {value, label, delta_pct, delta_direction, unit, prefix}',
+  '',
+  'closing_3d: End card with company and tagline floating.',
+  '  data: {company, tagline}',
+  '',
+  'RULES:',
+  '- Always open with title_3d, always close with closing_3d.',
+  '- If the data looks like a P&L (starts with a total/income, subtracts costs, ends at a profit), USE waterfall_3d.',
+  '- If the user provided a creative_direction hint, follow it faithfully.',
+  '- Keep scenes to 5-9 seconds each.',
+  '- Aim for 3-5 scenes total unless user asks for more.',
+  '- Use actual numbers from the data, never invent figures.',
+  '- Labels in waterfall must be SHORT (max 24 chars, truncate if needed).',
+  '',
+  'EXAMPLE:',
+  '[{"type":"title_3d","duration":5,"data":{"title":"Q3 P&L","subtitle":"How every Rupee becomes Profit","company":"Acme"}},{"type":"waterfall_3d","duration":10,"data":{"title":"P&L Waterfall","steps":[{"label":"Total Income","value":4444,"kind":"start"},{"label":"Cost of Goods Sold","value":-723,"kind":"subtract"},{"label":"Gross Profit","value":3721,"kind":"total","highlight":true},{"label":"Expenses","value":-1434,"kind":"subtract"},{"label":"EBIT","value":2287,"kind":"total"},{"label":"Interest","value":-415,"kind":"subtract"},{"label":"PBT","value":1872,"kind":"total"},{"label":"Income Taxes","value":-310,"kind":"subtract"},{"label":"Net Revenue","value":1562,"kind":"end","highlight":true}],"unit":"Cr","prefix":"Rs "}},{"type":"closing_3d","duration":4,"data":{"company":"Acme","tagline":"Thank you"}}]'
+].join('\n');
+
+async function generateStoryboard() {
+  if (!STATE.apiKey) { toast('Set your Anthropic API key first', true); openSettings(); return; }
+  var narrative = $('pres-narrative').value.trim();
+  if (!narrative && !STATE.parsedData) { toast('Provide data or a narrative', true); return; }
+
+  var userContent = [
+    'Title: ' + ($('pres-title').value.trim() || 'Untitled'),
+    'Narrative (what the data is):',
+    narrative || '(none provided)',
+    ''
+  ];
+
+  var direction = $('pres-direction').value.trim();
+  if (direction) {
+    userContent.push('Creative direction (how user wants this presented):');
+    userContent.push(direction);
+    userContent.push('');
+  }
+
+  if (STATE.parsedData) {
+    userContent.push('Uploaded data (first ' + Math.min(50, STATE.parsedData.rows.length) + ' rows of ' + STATE.parsedData.rows.length + '):');
+    userContent.push('Headers: ' + JSON.stringify(STATE.parsedData.headers));
+    var preview = STATE.parsedData.rows.slice(0, 50);
+    userContent.push('Rows: ' + JSON.stringify(preview));
+    userContent.push('');
+  }
+
+  userContent.push('Generate the JSON storyboard now.');
+
+  var btn = $('btn-generate');
+  var btnText = $('gen-btn-text');
+  btn.disabled = true;
+  btnText.innerHTML = '<span class="loader"></span> Generating';
+  $('render-status').className = 'render-status active';
+  $('render-status').textContent = 'Calling Claude...';
+
+  try {
+    var response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': STATE.apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 3000,
+        system: STORYBOARD_SYSTEM_PROMPT,
+        messages: [{ role: 'user', content: userContent.join('\n') }]
+      })
+    });
+
+    if (!response.ok) {
+      var errText = await response.text();
+      throw new Error('API error ' + response.status + ': ' + errText);
+    }
+    var data = await response.json();
+    var content = data.content && data.content[0] && data.content[0].text;
+    if (!content) throw new Error('Empty response from Claude');
+    content = content.replace(/^```json\s*/i, '').replace(/^```\s*/, '').replace(/\s*```$/, '').trim();
+
+    var storyboard;
+    try { storyboard = JSON.parse(content); }
+    catch (e) { throw new Error('Could not parse JSON from Claude. Raw:\n' + content.substring(0, 800)); }
+
+    if (!Array.isArray(storyboard)) {
+      var found = null;
+      if (storyboard.scenes && Array.isArray(storyboard.scenes)) found = storyboard.scenes;
+      else if (storyboard.storyboard && Array.isArray(storyboard.storyboard)) found = storyboard.storyboard;
+      else {
+        for (var k in storyboard) {
+          if (Array.isArray(storyboard[k]) && storyboard[k].length > 0 && storyboard[k][0] && storyboard[k][0].type) {
+            found = storyboard[k]; break;
+          }
+        }
+      }
+      if (found) storyboard = found;
+      else throw new Error('Expected array. Got object with keys: ' + Object.keys(storyboard).join(', '));
+    }
+    if (storyboard.length === 0) throw new Error('Empty storyboard');
+
+    STATE.storyboard = storyboard;
+    $('json-viewer').textContent = JSON.stringify(storyboard, null, 2);
+    $('json-viewer').classList.remove('hidden');
+
+    // For Phase 1 we render only the first non-title scene (or the waterfall) directly.
+    // Find the first scene that has 3D renderer, prefer waterfall_3d.
+    var sceneToRender = null;
+    for (var s = 0; s < storyboard.length; s++) {
+      if (storyboard[s].type === 'waterfall_3d') { sceneToRender = storyboard[s]; break; }
+    }
+    if (!sceneToRender) {
+      // Fall back to any renderable scene
+      for (var t = 0; t < storyboard.length; t++) {
+        if (storyboard[t].type === 'waterfall_3d' || storyboard[t].type === 'headline_3d' || storyboard[t].type === 'title_3d' || storyboard[t].type === 'closing_3d') {
+          sceneToRender = storyboard[t]; break;
+        }
+      }
+    }
+
+    if (sceneToRender) {
+      toast('Storyboard ready. Rendering 3D scene...');
+      $('render-status').textContent = 'Building 3D scene...';
+      await renderScene3D(sceneToRender);
+      $('render-status').textContent = 'Rendered. Drag canvas to orbit.';
+    } else {
+      toast('No 3D-renderable scene found', true);
+    }
+  } catch (err) {
+    console.error(err);
+    toast('Generation failed', true);
+    $('render-status').className = 'render-status';
+    $('render-status').textContent = '';
+    showFatalError('Generation failed:\n\n' + err.message);
+  } finally {
+    btn.disabled = false;
+    btnText.textContent = 'Generate 3D Visualization';
+  }
+}
+
+$('btn-generate').onclick = generateStoryboard;
+$('btn-replay').onclick = function() {
+  if (threeState.replayCurrent) threeState.replayCurrent();
+};
+$('btn-reset-camera').onclick = function() {
+  if (threeState.resetCamera) threeState.resetCamera();
+};
+
+/* ============ THREE.JS RENDER SYSTEM ============ */
+var threeState = {
+  initialized: false,
+  scene: null,
+  camera: null,
+  renderer: null,
+  controls: null,
+  animationId: null,
+  replayCurrent: null,
+  resetCamera: null
+};
+
+async function renderScene3D(scene) {
+  // Dynamic import so Three is only loaded when needed
+  var THREE = await import('three');
+  var OrbitControlsModule = await import('three/addons/controls/OrbitControls.js');
+  var OrbitControls = OrbitControlsModule.OrbitControls;
+
+  var container = $('preview-stage');
+  var canvas = $('three-canvas');
+  $('preview-empty').classList.add('hidden');
+  canvas.classList.remove('hidden');
+  $('scene-controls').classList.remove('hidden');
+  $('scene-info').textContent = 'Scene: ' + scene.type;
+
+  // Tear down previous
+  if (threeState.animationId) { cancelAnimationFrame(threeState.animationId); threeState.animationId = null; }
+  if (threeState.renderer) { threeState.renderer.dispose(); threeState.renderer = null; }
+
+  // New scene
+  var s = new THREE.Scene();
+  s.background = new THREE.Color(0x050508);
+  s.fog = new THREE.Fog(0x050508, 25, 90);
+
+  var width = container.clientWidth;
+  var height = container.clientHeight;
+  var camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 300);
+  camera.position.set(18, 12, 30);
+  camera.lookAt(0, 4, 0);
+
+  var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, preserveDrawingBuffer: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(width, height);
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.05;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+  // Lights
+  var key = new THREE.DirectionalLight(0xffd9a8, 2.8);
+  key.position.set(12, 20, 10);
+  key.castShadow = true;
+  key.shadow.mapSize.set(2048, 2048);
+  key.shadow.camera.left = -30;
+  key.shadow.camera.right = 30;
+  key.shadow.camera.top = 30;
+  key.shadow.camera.bottom = -10;
+  key.shadow.camera.near = 0.5;
+  key.shadow.camera.far = 80;
+  key.shadow.bias = -0.0005;
+  s.add(key);
+
+  var fill = new THREE.DirectionalLight(0x5588cc, 0.9);
+  fill.position.set(-15, 8, -5);
+  s.add(fill);
+
+  var ambient = new THREE.AmbientLight(0xffffff, 0.35);
+  s.add(ambient);
+
+  // Ground plane
+  var groundGeo = new THREE.PlaneGeometry(120, 120);
+  var groundMat = new THREE.MeshStandardMaterial({ color: 0x0c0c12, roughness: 0.9, metalness: 0.05 });
+  var ground = new THREE.Mesh(groundGeo, groundMat);
+  ground.rotation.x = -Math.PI/2;
+  ground.position.y = 0;
+  ground.receiveShadow = true;
+  s.add(ground);
+
+  // Subtle grid lines
+  var grid = new THREE.GridHelper(80, 40, 0x1f1f2a, 0x14141a);
+  grid.position.y = 0.01;
+  s.add(grid);
+
+  // Controls
+  var controls = new OrbitControls(camera, canvas);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.target.set(0, 4, 0);
+  controls.minDistance = 8;
+  controls.maxDistance = 70;
+  controls.maxPolarAngle = Math.PI * 0.48;
+  controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
+
+  threeState.scene = s;
+  threeState.camera = camera;
+  threeState.renderer = renderer;
+  threeState.controls = controls;
+
+  var defaultCamPos = camera.position.clone();
+  var defaultCamTarget = controls.target.clone();
+  threeState.resetCamera = function() {
+    camera.position.copy(defaultCamPos);
+    controls.target.copy(defaultCamTarget);
+    controls.update();
+  };
+
+  // Build the scene content
+  var sceneStart = performance.now();
+  var sceneElements = null;
+  if (scene.type === 'waterfall_3d') {
+    sceneElements = buildWaterfall3D(THREE, s, scene);
+  } else if (scene.type === 'title_3d') {
+    sceneElements = buildTitle3D(THREE, s, scene);
+  } else if (scene.type === 'closing_3d') {
+    sceneElements = buildClosing3D(THREE, s, scene);
+  } else if (scene.type === 'headline_3d') {
+    sceneElements = buildHeadline3D(THREE, s, scene);
+  }
+
+  threeState.replayCurrent = function() { sceneStart = performance.now(); };
+
+  // Handle resize
+  var onResize = function() {
+    var w = container.clientWidth;
+    var h = container.clientHeight;
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w, h);
+  };
+  window.addEventListener('resize', onResize);
+
+  // Animation loop
+  function animate() {
+    threeState.animationId = requestAnimationFrame(animate);
+    var elapsed = (performance.now() - sceneStart) / 1000;
+    if (sceneElements && sceneElements.update) sceneElements.update(elapsed);
+    controls.update();
+    renderer.render(s, camera);
+  }
+  animate();
+}
+
+/* ============ 3D SCENE BUILDERS ============ */
+
+function buildWaterfall3D(THREE, scene, sceneData) {
+  var d = sceneData.data || {};
+  var steps = d.steps || [];
+  if (steps.length === 0) return null;
+
+  var BAR_WIDTH = 1.8;
+  var BAR_DEPTH = 1.8;
+  var GAP = 0.6;
+  var Y_SCALE = 0.015; // height per unit of value
+
+  // Find max height for normalization
+  var maxRunning = 0;
+  var running = 0;
+  for (var p = 0; p < steps.length; p++) {
+    var step = steps[p];
+    var k = step.kind;
+    var v = step.value || 0;
+    if (k === 'start' || k === 'total' || k === 'end') {
+      running = Math.abs(v);
+    } else if (k === 'add') {
+      running += Math.abs(v);
+    } else if (k === 'subtract') {
+      running -= Math.abs(v);
+    }
+    if (running > maxRunning) maxRunning = running;
+  }
+
+  // Dynamic Y scale to fit the scene nicely
+  var IDEAL_MAX_HEIGHT = 10;
+  if (maxRunning > 0) Y_SCALE = IDEAL_MAX_HEIGHT / maxRunning;
+
+  var totalWidth = steps.length * (BAR_WIDTH + GAP) - GAP;
+  var startX = -totalWidth / 2 + BAR_WIDTH / 2;
+
+  // Color palette
+  var COLOR_START = new THREE.Color(0x6b7a8f);
+  var COLOR_ADD = new THREE.Color(0x10b981);
+  var COLOR_SUBTRACT = new THREE.Color(0xef4444);
+  var COLOR_TOTAL = new THREE.Color(0x3b82f6);
+  var COLOR_END = new THREE.Color(0xd4a44c);
+  var COLOR_HIGHLIGHT = new THREE.Color(0xe8b85a);
+
+  var bars = [];
+  running = 0;
+
+  for (var i = 0; i < steps.length; i++) {
+    var st = steps[i];
+    var val = st.value || 0;
+    var absVal = Math.abs(val);
+    var kind = st.kind || 'add';
+    var x = startX + i * (BAR_WIDTH + GAP);
+
+    var barHeight, barBaseY;
+    var color = COLOR_ADD;
+
+    if (kind === 'start') {
+      barHeight = absVal * Y_SCALE;
+      barBaseY = 0;
+      color = COLOR_START;
+      running = absVal;
+    } else if (kind === 'end') {
+      barHeight = absVal * Y_SCALE;
+      barBaseY = 0;
+      color = COLOR_END;
+      running = absVal;
+    } else if (kind === 'total') {
+      barHeight = absVal * Y_SCALE;
+      barBaseY = 0;
+      color = COLOR_TOTAL;
+      running = absVal;
+    } else if (kind === 'add') {
+      barHeight = absVal * Y_SCALE;
+      barBaseY = running * Y_SCALE;
+      color = COLOR_ADD;
+      running += absVal;
+    } else if (kind === 'subtract') {
+      barHeight = absVal * Y_SCALE;
+      barBaseY = (running - absVal) * Y_SCALE;
+      color = COLOR_SUBTRACT;
+      running -= absVal;
+    }
+
+    if (st.highlight) color = COLOR_HIGHLIGHT;
+
+    // Create bar mesh
+    var geo = new THREE.BoxGeometry(BAR_WIDTH, 1, BAR_DEPTH);
+    var mat = new THREE.MeshStandardMaterial({
+      color: color,
+      roughness: 0.35,
+      metalness: 0.25,
+      emissive: color,
+      emissiveIntensity: st.highlight ? 0.35 : 0.12
+    });
+    var bar = new THREE.Mesh(geo, mat);
+    bar.position.set(x, barBaseY, 0);
+    bar.scale.y = 0.001; // start flat
+    bar.castShadow = true;
+    bar.receiveShadow = true;
+    scene.add(bar);
+
+    // Connector line to next bar's base (drawn later per frame if needed)
+    bars.push({
+      mesh: bar,
+      targetHeight: barHeight,
+      baseY: barBaseY,
+      label: st.label || '',
+      value: val,
+      kind: kind,
+      unit: d.unit || '',
+      prefix: d.prefix || '',
+      appearTime: 0.8 + i * 0.55,
+      x: x
+    });
+  }
+
+  // Floating title billboard
+  var titleSprite = makeTextSprite(THREE, d.title || '', { fontSize: 64, color: '#ede9e0', bgAlpha: 0 });
+  titleSprite.position.set(0, IDEAL_MAX_HEIGHT + 3, 0);
+  titleSprite.scale.set(12, 1.5, 1);
+  scene.add(titleSprite);
+
+  // Subtle floor origin marker
+  var originGeo = new THREE.CircleGeometry(0.3, 16);
+  var originMat = new THREE.MeshBasicMaterial({ color: 0xd4a44c, transparent: true, opacity: 0.6 });
+  var originMark = new THREE.Mesh(originGeo, originMat);
+  originMark.rotation.x = -Math.PI/2;
+  originMark.position.y = 0.02;
+  scene.add(originMark);
+
+  // Camera slow orbit
+  var startCam = new THREE.Vector3(18, 12, 30);
+
+  return {
+    update: function(t) {
+      // Animate bars growing
+      for (var b = 0; b < bars.length; b++) {
+        var bar = bars[b];
+        var dt = Math.max(0, Math.min(1, (t - bar.appearTime) / 0.65));
+        var eased = 1 - Math.pow(1 - dt, 3); // easeOutCubic
+        bar.mesh.scale.y = Math.max(0.001, bar.targetHeight * eased);
+        // Box geometry is centered at origin, so position must shift as scaleY grows
+        bar.mesh.position.y = bar.baseY + (bar.targetHeight * eased) / 2;
+      }
+    }
+  };
+}
+
+function buildTitle3D(THREE, scene, sceneData) {
+  var d = sceneData.data || {};
+  var titleSprite = makeTextSprite(THREE, d.title || 'Untitled', { fontSize: 110, color: '#ede9e0', bgAlpha: 0, weight: '900' });
+  titleSprite.position.set(0, 6, 0);
+  titleSprite.scale.set(18, 3.0, 1);
+  scene.add(titleSprite);
+
+  if (d.subtitle) {
+    var sub = makeTextSprite(THREE, d.subtitle, { fontSize: 56, color: '#d4a44c', bgAlpha: 0, italic: true });
+    sub.position.set(0, 3.5, 0);
+    sub.scale.set(14, 1.8, 1);
+    scene.add(sub);
+  }
+  if (d.company) {
+    var co = makeTextSprite(THREE, d.company.toUpperCase(), { fontSize: 32, color: '#8a8580', bgAlpha: 0, weight: '600', letterSpacing: 0.25 });
+    co.position.set(0, 9.2, 0);
+    co.scale.set(8, 0.9, 1);
+    scene.add(co);
+  }
+  return { update: function(){} };
+}
+
+function buildClosing3D(THREE, scene, sceneData) {
+  var d = sceneData.data || {};
+  var co = makeTextSprite(THREE, d.company || 'Thank you.', { fontSize: 110, color: '#d4a44c', bgAlpha: 0, italic: true });
+  co.position.set(0, 6, 0);
+  co.scale.set(16, 2.6, 1);
+  scene.add(co);
+  if (d.tagline) {
+    var tag = makeTextSprite(THREE, d.tagline.toUpperCase(), { fontSize: 30, color: '#8a8580', bgAlpha: 0, weight: '600', letterSpacing: 0.28 });
+    tag.position.set(0, 3.8, 0);
+    tag.scale.set(12, 0.8, 1);
+    scene.add(tag);
+  }
+  return { update: function(){} };
+}
+
+function buildHeadline3D(THREE, scene, sceneData) {
+  var d = sceneData.data || {};
+  var prefix = d.prefix || '';
+  var unit = d.unit ? ' ' + d.unit : '';
+  var headline = makeTextSprite(THREE, prefix + (d.value || 0) + unit, { fontSize: 180, color: '#d4a44c', bgAlpha: 0, weight: '900' });
+  headline.position.set(0, 6, 0);
+  headline.scale.set(22, 4, 1);
+  scene.add(headline);
+
+  if (d.label) {
+    var lbl = makeTextSprite(THREE, d.label.toUpperCase(), { fontSize: 38, color: '#ede9e0', bgAlpha: 0, weight: '500', letterSpacing: 0.2 });
+    lbl.position.set(0, 2.5, 0);
+    lbl.scale.set(10, 1, 1);
+    scene.add(lbl);
+  }
+  if (d.delta_pct != null) {
+    var dir = d.delta_direction || 'up';
+    var arrow = dir === 'up' ? '\u2191' : (dir === 'down' ? '\u2193' : '\u2192');
+    var color = dir === 'up' ? '#10b981' : (dir === 'down' ? '#ef4444' : '#8a8580');
+    var sign = d.delta_pct > 0 ? '+' : '';
+    var delta = makeTextSprite(THREE, arrow + ' ' + sign + d.delta_pct + '%', { fontSize: 58, color: color, bgAlpha: 0, weight: '700' });
+    delta.position.set(0, 1.0, 0);
+    delta.scale.set(7, 1.4, 1);
+    scene.add(delta);
+  }
+  return { update: function(){} };
+}
+
+/* ============ TEXT SPRITE HELPER ============ */
+function makeTextSprite(THREE, text, opts) {
+  opts = opts || {};
+  var fontSize = opts.fontSize || 64;
+  var weight = opts.weight || '400';
+  var color = opts.color || '#ede9e0';
+  var italic = opts.italic || false;
+  var letterSpacing = opts.letterSpacing || 0;
+  var bgAlpha = opts.bgAlpha != null ? opts.bgAlpha : 0;
+
+  var canvas = document.createElement('canvas');
+  var padding = 40;
+  var ctx = canvas.getContext('2d');
+  var fontStyle = italic ? 'italic' : 'normal';
+  var fontFamily = italic ? '"Cormorant Garamond", serif' : 'Inter, sans-serif';
+  ctx.font = fontStyle + ' ' + weight + ' ' + fontSize + 'px ' + fontFamily;
+  var metrics = ctx.measureText(text);
+  var textWidth = metrics.width + (letterSpacing ? text.length * fontSize * letterSpacing : 0);
+  canvas.width = Math.ceil(textWidth + padding * 2);
+  canvas.height = Math.ceil(fontSize * 1.4 + padding * 2);
+
+  ctx = canvas.getContext('2d');
+  if (bgAlpha > 0) { ctx.fillStyle = 'rgba(0,0,0,' + bgAlpha + ')'; ctx.fillRect(0, 0, canvas.width, canvas.height); }
+  ctx.font = fontStyle + ' ' + weight + ' ' + fontSize + 'px ' + fontFamily;
+  ctx.fillStyle = color;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  if (letterSpacing) {
+    // Manually space letters
+    var totalW = 0;
+    for (var i = 0; i < text.length; i++) totalW += ctx.measureText(text[i]).width + fontSize * letterSpacing;
+    totalW -= fontSize * letterSpacing;
+    var x = canvas.width/2 - totalW/2;
+    ctx.textAlign = 'left';
+    for (var j = 0; j < text.length; j++) {
+      ctx.fillText(text[j], x, canvas.height/2);
+      x += ctx.measureText(text[j]).width + fontSize * letterSpacing;
+    }
+  } else {
+    ctx.fillText(text, canvas.width/2, canvas.height/2);
+  }
+
+  var tex = new THREE.CanvasTexture(canvas);
+  tex.anisotropy = 8;
+  tex.minFilter = THREE.LinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  var spriteMat = new THREE.SpriteMaterial({ map: tex, transparent: true });
+  var sprite = new THREE.Sprite(spriteMat);
+  sprite.userData.textWidth = canvas.width;
+  sprite.userData.textHeight = canvas.height;
+  return sprite;
+}
+
+/* ============ START ============ */
+bootstrap();
+</script>
+</body>
+</html>
