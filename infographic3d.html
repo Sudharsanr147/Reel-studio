@@ -424,19 +424,26 @@ var STORYBOARD_SYSTEM_PROMPT = [
   '',
   'title_3d: Opening title card in 3D space. data: {title, subtitle, company}',
   '',
-  'waterfall_3d: A P&L or bridge waterfall in 3D. Stacked bars showing flow from starting value to ending value.',
-  '  data: {',
-  '    title: string, subtitle: string (optional),',
-  '    steps: [{',
-  '      label: string (max 24 chars),',
-  '      value: number (positive for additions/totals; negative allowed for subtracts but "kind" is what matters),',
-  '      kind: "start"|"add"|"subtract"|"total"|"end",',
-  '      highlight: boolean (optional) - glows the bar',
-  '    }],',
-  '    unit: string, prefix: string',
-  '  }',
+  'waterfall_3d: P&L or bridge waterfall. Flow from starting value through additions/subtractions to ending value.',
+  '  data: {title, subtitle, steps: [{label (max 24 chars), value, kind: "start"|"add"|"subtract"|"total"|"end", highlight: bool}], unit, prefix}',
   '',
-  'headline_3d: One huge extruded number with label and delta. data: {value, label, delta_pct, delta_direction: "up"|"down"|"flat", unit, prefix}',
+  'bars_3d: 3D bar chart for peer/segment comparison. Not for flow data - use waterfall for that.',
+  '  data: {title, items: [{label (max 24 chars), value, highlight: bool}], unit, prefix}',
+  '  USE FOR: regional sales, segment revenue, peer comparison, monthly breakdown',
+  '',
+  'kpi_grid_3d: Executive dashboard - up to 6 floating tiles, each with a big number, label, and optional delta.',
+  '  data: {title, items: [{label, value, delta_pct (optional), delta_direction: "up"|"down"|"flat", prefix, unit, highlight: bool}]}',
+  '  USE FOR: summary of multiple KPIs at once (revenue, margin, headcount, etc.)',
+  '',
+  'growth_path_3d: Extruded 3D ribbon rising through time. Shows trajectory with waypoints.',
+  '  data: {title, points: [{label, value}], unit, prefix}',
+  '  USE FOR: revenue/EBITDA/users over years, stock price, trend lines',
+  '',
+  'donut_3d: Thick 3D ring showing a single percentage with optional comparison.',
+  '  data: {title, percentage (0-100), label, compare_to_pct (optional)}',
+  '  USE FOR: margin, utilization, progress to target, market share',
+  '',
+  'headline_3d: Huge 3D number with label and delta. data: {value, label, delta_pct, delta_direction, unit, prefix}',
   '',
   'closing_3d: End card. data: {company, tagline}',
   '',
@@ -448,23 +455,28 @@ var STORYBOARD_SYSTEM_PROMPT = [
   '- "low": low angle looking up (dramatic)',
   '',
   'EACH SCENE MUST INCLUDE:',
-  '- "camera_angle": one of the above angle strings',
-  '- OR "camera_sequence": array of angles to cycle through within the scene, e.g. ["front","hero","low"]',
-  '- Use ONLY angles from the user\'s selected_angles list.',
+  '- "camera_angle": one of the angle strings, OR',
+  '- "camera_sequence": array of angles to cycle through within the scene',
+  '- Use ONLY angles from the selected_angles list.',
   '- For longer scenes (8s+), prefer camera_sequence for cinematic movement.',
-  '- For title/closing, use single camera_angle.',
   '',
-  'RULES:',
-  '- Always open with title_3d, always close with closing_3d.',
-  '- If data looks like a P&L (total income minus costs equals profit), USE waterfall_3d.',
-  '- Follow the user creative_direction faithfully.',
-  '- Scenes 5-10 seconds each. Total 3-5 scenes.',
+  'DIRECTING RULES:',
+  '- Always open with title_3d, close with closing_3d.',
+  '- MATCH SCENE TO DATA:',
+  '  * P&L / cost flow -> waterfall_3d',
+  '  * Peer/region/segment comparison -> bars_3d',
+  '  * Multi-KPI summary (3-6 metrics) -> kpi_grid_3d',
+  '  * Trend over time -> growth_path_3d',
+  '  * Single percentage (margin, utilization) -> donut_3d',
+  '  * One huge hero number -> headline_3d',
+  '- A 60s video should use 3-4 DIFFERENT scene types, not just one repeated.',
+  '- Follow creative_direction faithfully when given.',
+  '- Scenes 5-10 seconds each. Total 4-6 scenes.',
   '- Use actual numbers; never invent figures.',
-  '- Labels in waterfall must be SHORT (max 24 chars).',
-  '- Set "kind": "start" for opening total (income), "subtract" for costs, "total" for intermediate subtotals (gross profit, EBIT), "end" for final (net profit/revenue).',
+  '- Labels must be SHORT (max 24 chars).',
   '',
-  'EXAMPLE:',
-  '[{"type":"title_3d","duration":5,"camera_angle":"front","data":{"title":"Q3 P&L","subtitle":"How Income becomes Profit","company":"Acme"}},{"type":"waterfall_3d","duration":12,"camera_sequence":["front","hero","low"],"data":{"title":"P&L Flow","steps":[{"label":"Total Income","value":4444,"kind":"start"},{"label":"COGS","value":-723,"kind":"subtract"},{"label":"Gross Profit","value":3721,"kind":"total","highlight":true},{"label":"Expenses","value":-1434,"kind":"subtract"},{"label":"EBIT","value":2287,"kind":"total"},{"label":"Interest","value":-415,"kind":"subtract"},{"label":"PBT","value":1872,"kind":"total"},{"label":"Taxes","value":-310,"kind":"subtract"},{"label":"Net Revenue","value":1562,"kind":"end","highlight":true}],"unit":"Cr","prefix":"Rs "}},{"type":"closing_3d","duration":4,"camera_angle":"hero","data":{"company":"Acme","tagline":"Thank you"}}]'
+  'EXAMPLE (rich variety):',
+  '[{"type":"title_3d","duration":5,"camera_angle":"front","data":{"title":"Q3 Review","company":"Acme"}},{"type":"kpi_grid_3d","duration":8,"camera_sequence":["hero","front"],"data":{"title":"Key Metrics","items":[{"label":"Revenue","value":142,"prefix":"Rs ","unit":"Cr","delta_pct":23,"delta_direction":"up","highlight":true},{"label":"Margin","value":31,"unit":"%","delta_pct":3,"delta_direction":"up"},{"label":"Headcount","value":420,"delta_pct":8,"delta_direction":"up"}]}},{"type":"waterfall_3d","duration":10,"camera_sequence":["front","hero","low"],"data":{"title":"P&L Bridge","steps":[{"label":"Revenue","value":142,"kind":"start"},{"label":"COGS","value":-43,"kind":"subtract"},{"label":"Gross Profit","value":99,"kind":"total","highlight":true},{"label":"OpEx","value":-55,"kind":"subtract"},{"label":"Net","value":44,"kind":"end","highlight":true}],"unit":"Cr","prefix":"Rs "}},{"type":"closing_3d","duration":4,"camera_angle":"hero","data":{"company":"Acme","tagline":"Thank you"}}]'
 ].join('\n');
 
 async function generateStoryboard() {
@@ -680,6 +692,10 @@ async function playScene(idx, inSequence) {
   else if (sceneData.type === 'title_3d') sceneElements = buildTitle3D(THREE, scene, sceneData);
   else if (sceneData.type === 'closing_3d') sceneElements = buildClosing3D(THREE, scene, sceneData);
   else if (sceneData.type === 'headline_3d') sceneElements = buildHeadline3D(THREE, scene, sceneData);
+  else if (sceneData.type === 'bars_3d') sceneElements = buildBars3D(THREE, scene, sceneData);
+  else if (sceneData.type === 'kpi_grid_3d') sceneElements = buildKpiGrid3D(THREE, scene, sceneData);
+  else if (sceneData.type === 'growth_path_3d') sceneElements = buildGrowthPath3D(THREE, scene, sceneData);
+  else if (sceneData.type === 'donut_3d') sceneElements = buildDonut3D(THREE, scene, sceneData);
   else {
     // Unknown 3D scene - skip
     if (inSequence) return;
@@ -1013,6 +1029,519 @@ function buildHeadline3D(THREE, scene, sceneData) {
 
       if (lbl) { var a = Math.max(0, Math.min(1, (t - 0.5) / 0.6)); lbl.material.opacity = 1 - Math.pow(1 - a, 3); }
       if (delta) { var da = Math.max(0, Math.min(1, (t - 0.8) / 0.6)); delta.material.opacity = 1 - Math.pow(1 - da, 3); }
+    }
+  };
+}
+
+/* ============ NEW SCENE: BARS 3D ============ */
+
+function buildBars3D(THREE, scene, sceneData) {
+  var d = sceneData.data || {};
+  var items = d.items || [];
+  if (items.length === 0) return null;
+
+  var BAR_WIDTH = 2.0, BAR_DEPTH = 2.0, GAP = 1.0;
+  var Y_SCALE = 0.02;
+
+  // Find max
+  var maxVal = 0;
+  for (var p = 0; p < items.length; p++) {
+    var v = Math.abs(items[p].value || 0);
+    if (v > maxVal) maxVal = v;
+  }
+  var IDEAL_MAX = 10;
+  if (maxVal > 0) Y_SCALE = IDEAL_MAX / maxVal;
+
+  var totalWidth = items.length * (BAR_WIDTH + GAP) - GAP;
+  var startX = -totalWidth / 2 + BAR_WIDTH / 2;
+
+  var COLOR_BAR = new THREE.Color(0x3b82f6);
+  var COLOR_HIGHLIGHT = new THREE.Color(0xd4a44c);
+
+  var bars = [];
+  for (var i = 0; i < items.length; i++) {
+    var item = items[i];
+    var absVal = Math.abs(item.value || 0);
+    var x = startX + i * (BAR_WIDTH + GAP);
+    var barHeight = absVal * Y_SCALE;
+    var color = item.highlight ? COLOR_HIGHLIGHT : COLOR_BAR;
+
+    var geo = new THREE.BoxGeometry(BAR_WIDTH, 1, BAR_DEPTH);
+    var mat = new THREE.MeshStandardMaterial({
+      color: color, roughness: 0.35, metalness: 0.25,
+      emissive: color, emissiveIntensity: item.highlight ? 0.4 : 0.1
+    });
+    var bar = new THREE.Mesh(geo, mat);
+    bar.position.set(x, 0, 0);
+    bar.scale.y = 0.001;
+    bar.castShadow = true;
+    bar.receiveShadow = true;
+    scene.add(bar);
+
+    // Value pill
+    var prefix = d.prefix || '';
+    var unit = d.unit ? ' ' + d.unit : '';
+    var displayVal = prefix + Math.abs(item.value).toLocaleString('en-IN') + unit;
+    var valueSprite = makeTextSprite(THREE, displayVal, {
+      fontSize: 54, color: '#ede9e0', weight: '800',
+      bgColor: 'rgba(12,12,18,0.88)', padX: 24, padY: 10
+    });
+    valueSprite.position.set(x, barHeight + 1.1, 0);
+    var vw = valueSprite.userData.textWidth / 60;
+    var vh = valueSprite.userData.textHeight / 60;
+    valueSprite.scale.set(vw, vh, 1);
+    valueSprite.material.opacity = 0;
+    scene.add(valueSprite);
+
+    // Label
+    var labelSprite = makeTextSprite(THREE, (item.label || '').toUpperCase(), {
+      fontSize: 36, color: '#8a8580', weight: '600', letterSpacing: 0.2
+    });
+    labelSprite.position.set(x, -0.6, 0);
+    var lw = labelSprite.userData.textWidth / 80;
+    var lh = labelSprite.userData.textHeight / 80;
+    labelSprite.scale.set(lw, lh, 1);
+    labelSprite.material.opacity = 0;
+    scene.add(labelSprite);
+
+    bars.push({
+      mesh: bar, valueSprite: valueSprite, labelSprite: labelSprite,
+      targetHeight: barHeight, appearTime: 0.6 + i * 0.4,
+      valueAppearTime: 0.6 + i * 0.4 + 0.3,
+      labelAppearTime: 0.6 + i * 0.4 + 0.1
+    });
+  }
+
+  // Title
+  if (d.title) {
+    var title = makeTextSprite(THREE, d.title, { fontSize: 72, color: '#ede9e0', weight: '400', italic: true });
+    title.position.set(0, IDEAL_MAX + 4, 0);
+    var tw = title.userData.textWidth / 60;
+    var th = title.userData.textHeight / 60;
+    title.scale.set(tw, th, 1);
+    scene.add(title);
+  }
+
+  return {
+    update: function(t) {
+      for (var b = 0; b < bars.length; b++) {
+        var bar = bars[b];
+        var dt = Math.max(0, Math.min(1, (t - bar.appearTime) / 0.6));
+        var eased = 1 - Math.pow(1 - dt, 3);
+        bar.mesh.scale.y = Math.max(0.001, bar.targetHeight * eased);
+        bar.mesh.position.y = (bar.targetHeight * eased) / 2;
+
+        var vA = Math.max(0, Math.min(1, (t - bar.valueAppearTime) / 0.5));
+        bar.valueSprite.material.opacity = vA;
+        bar.valueSprite.position.y = bar.targetHeight * eased + 1.1;
+
+        var lA = Math.max(0, Math.min(1, (t - bar.labelAppearTime) / 0.4));
+        bar.labelSprite.material.opacity = lA * 0.9;
+      }
+    }
+  };
+}
+
+/* ============ NEW SCENE: KPI GRID 3D ============ */
+
+function buildKpiGrid3D(THREE, scene, sceneData) {
+  var d = sceneData.data || {};
+  var items = d.items || [];
+  if (items.length === 0) return null;
+
+  // Arrange in a grid (max 3 columns)
+  var cols = Math.min(3, items.length);
+  var rows = Math.ceil(items.length / cols);
+
+  var TILE_W = 7, TILE_H = 4.5, TILE_GAP_X = 1.2, TILE_GAP_Y = 1.5;
+  var totalWidth = cols * TILE_W + (cols - 1) * TILE_GAP_X;
+  var totalHeight = rows * TILE_H + (rows - 1) * TILE_GAP_Y;
+  var startX = -totalWidth / 2 + TILE_W / 2;
+  var startY = totalHeight / 2 - TILE_H / 2 + 2;
+
+  var COLOR_TILE = new THREE.Color(0x1c1c26);
+  var COLOR_HIGHLIGHT = new THREE.Color(0xd4a44c);
+
+  var tiles = [];
+  for (var i = 0; i < items.length; i++) {
+    var item = items[i];
+    var col = i % cols;
+    var row = Math.floor(i / cols);
+    var x = startX + col * (TILE_W + TILE_GAP_X);
+    var y = startY - row * (TILE_H + TILE_GAP_Y);
+
+    // Tile background (thin floating panel)
+    var tileColor = item.highlight ? COLOR_HIGHLIGHT : COLOR_TILE;
+    var tileGeo = new THREE.BoxGeometry(TILE_W, TILE_H, 0.25);
+    var tileMat = new THREE.MeshStandardMaterial({
+      color: tileColor, roughness: 0.6, metalness: 0.2,
+      emissive: tileColor, emissiveIntensity: item.highlight ? 0.2 : 0.05
+    });
+    var tile = new THREE.Mesh(tileGeo, tileMat);
+    tile.position.set(x, y, 0);
+    tile.scale.setScalar(0.001);
+    tile.castShadow = true;
+    scene.add(tile);
+
+    // Accent bar on top of tile
+    var accentGeo = new THREE.BoxGeometry(TILE_W, 0.1, 0.3);
+    var accentMat = new THREE.MeshStandardMaterial({
+      color: item.highlight ? 0xe8b85a : 0x3b82f6,
+      emissive: item.highlight ? 0xe8b85a : 0x3b82f6, emissiveIntensity: 0.5
+    });
+    var accent = new THREE.Mesh(accentGeo, accentMat);
+    accent.position.set(x, y + TILE_H/2 - 0.05, 0.15);
+    accent.scale.setScalar(0.001);
+    scene.add(accent);
+
+    // Value text
+    var prefix = item.prefix || d.prefix || '';
+    var unit = item.unit || d.unit || '';
+    var unitStr = unit ? ' ' + unit : '';
+    var valText = prefix + Math.abs(item.value).toLocaleString('en-IN') + unitStr;
+    var valSprite = makeTextSprite(THREE, valText, {
+      fontSize: 96, color: item.highlight ? '#0a0a0c' : '#ede9e0', weight: '900'
+    });
+    valSprite.position.set(x, y + 0.4, 0.2);
+    var vw = valSprite.userData.textWidth / 100;
+    var vh = valSprite.userData.textHeight / 100;
+    valSprite.scale.set(vw, vh, 1);
+    valSprite.material.opacity = 0;
+    scene.add(valSprite);
+
+    // Label
+    var labelSprite = makeTextSprite(THREE, (item.label || '').toUpperCase(), {
+      fontSize: 32, color: item.highlight ? 'rgba(10,10,12,0.7)' : '#8a8580',
+      weight: '600', letterSpacing: 0.2
+    });
+    labelSprite.position.set(x, y - 1.3, 0.2);
+    var lw = labelSprite.userData.textWidth / 90;
+    var lh = labelSprite.userData.textHeight / 90;
+    labelSprite.scale.set(lw, lh, 1);
+    labelSprite.material.opacity = 0;
+    scene.add(labelSprite);
+
+    // Delta
+    var deltaSprite = null;
+    if (item.delta_pct != null) {
+      var dir = item.delta_direction || 'up';
+      var arrow = dir === 'up' ? '\u2191' : (dir === 'down' ? '\u2193' : '\u2192');
+      var deltaColor = dir === 'up' ? '#10b981' : (dir === 'down' ? '#ef4444' : '#8a8580');
+      var sign = item.delta_pct > 0 ? '+' : '';
+      deltaSprite = makeTextSprite(THREE, arrow + ' ' + sign + item.delta_pct + '%', {
+        fontSize: 34, color: deltaColor, weight: '700'
+      });
+      deltaSprite.position.set(x, y - 1.95, 0.2);
+      var dw = deltaSprite.userData.textWidth / 90;
+      var dh = deltaSprite.userData.textHeight / 90;
+      deltaSprite.scale.set(dw, dh, 1);
+      deltaSprite.material.opacity = 0;
+      scene.add(deltaSprite);
+    }
+
+    tiles.push({
+      tile: tile, accent: accent, val: valSprite, label: labelSprite, delta: deltaSprite,
+      appearTime: 0.4 + i * 0.25,
+      contentTime: 0.4 + i * 0.25 + 0.4
+    });
+  }
+
+  // Title
+  if (d.title) {
+    var title = makeTextSprite(THREE, d.title, { fontSize: 68, color: '#ede9e0', weight: '400', italic: true });
+    title.position.set(0, startY + TILE_H/2 + 2.5, 0);
+    var tw = title.userData.textWidth / 60;
+    var th = title.userData.textHeight / 60;
+    title.scale.set(tw, th, 1);
+    scene.add(title);
+  }
+
+  return {
+    update: function(t) {
+      for (var i = 0; i < tiles.length; i++) {
+        var T = tiles[i];
+        var dt = Math.max(0, Math.min(1, (t - T.appearTime) / 0.5));
+        var eased = 1 - Math.pow(1 - dt, 3);
+        T.tile.scale.setScalar(eased);
+        T.accent.scale.setScalar(eased);
+
+        var cA = Math.max(0, Math.min(1, (t - T.contentTime) / 0.4));
+        T.val.material.opacity = cA;
+        T.label.material.opacity = cA * 0.9;
+        if (T.delta) T.delta.material.opacity = cA;
+      }
+    }
+  };
+}
+
+/* ============ NEW SCENE: GROWTH PATH 3D ============ */
+
+function buildGrowthPath3D(THREE, scene, sceneData) {
+  var d = sceneData.data || {};
+  var points = d.points || [];
+  if (points.length < 2) return null;
+
+  var PATH_WIDTH = 0.6, PATH_DEPTH = 0.6;
+  var X_SPAN = 20;
+  var Y_SCALE = 0.02;
+
+  var maxVal = 0;
+  for (var p = 0; p < points.length; p++) {
+    var v = Math.abs(points[p].value || 0);
+    if (v > maxVal) maxVal = v;
+  }
+  var IDEAL_MAX = 10;
+  if (maxVal > 0) Y_SCALE = IDEAL_MAX / maxVal;
+
+  // Compute positions for each waypoint
+  var coords = [];
+  for (var i = 0; i < points.length; i++) {
+    var x = -X_SPAN/2 + (i / (points.length - 1)) * X_SPAN;
+    var y = (points[i].value || 0) * Y_SCALE;
+    coords.push({ x: x, y: y, value: points[i].value, label: points[i].label });
+  }
+
+  // Build extruded ribbon as connected segments
+  var segments = [];
+  for (var s = 0; s < coords.length - 1; s++) {
+    var a = coords[s], b = coords[s+1];
+    var midX = (a.x + b.x) / 2, midY = (a.y + b.y) / 2;
+    var len = Math.sqrt(Math.pow(b.x - a.x, 2) + Math.pow(b.y - a.y, 2));
+    var angle = Math.atan2(b.y - a.y, b.x - a.x);
+
+    var segGeo = new THREE.BoxGeometry(len, PATH_WIDTH, PATH_DEPTH);
+    var segColor = new THREE.Color(0xd4a44c);
+    var segMat = new THREE.MeshStandardMaterial({
+      color: segColor, roughness: 0.35, metalness: 0.3,
+      emissive: segColor, emissiveIntensity: 0.2
+    });
+    var seg = new THREE.Mesh(segGeo, segMat);
+    seg.position.set(midX, midY, 0);
+    seg.rotation.z = angle;
+    seg.scale.setScalar(0.001);
+    seg.castShadow = true;
+    scene.add(seg);
+    segments.push({ mesh: seg, appearTime: 0.6 + s * 0.35 });
+  }
+
+  // Waypoint spheres
+  var waypoints = [];
+  for (var w = 0; w < coords.length; w++) {
+    var pt = coords[w];
+    var highlight = (w === coords.length - 1);  // Always highlight the final waypoint
+    var sphereGeo = new THREE.SphereGeometry(0.55, 24, 16);
+    var sphereColor = highlight ? 0xe8b85a : 0x3b82f6;
+    var sphereMat = new THREE.MeshStandardMaterial({
+      color: sphereColor, roughness: 0.3, metalness: 0.4,
+      emissive: sphereColor, emissiveIntensity: highlight ? 0.5 : 0.25
+    });
+    var sphere = new THREE.Mesh(sphereGeo, sphereMat);
+    sphere.position.set(pt.x, pt.y, 0);
+    sphere.scale.setScalar(0.001);
+    sphere.castShadow = true;
+    scene.add(sphere);
+
+    // Value pill above each waypoint
+    var prefix = d.prefix || '';
+    var unit = d.unit ? ' ' + d.unit : '';
+    var valText = prefix + Math.abs(pt.value).toLocaleString('en-IN') + unit;
+    var valSprite = makeTextSprite(THREE, valText, {
+      fontSize: 50, color: '#ede9e0', weight: '800',
+      bgColor: 'rgba(12,12,18,0.88)', padX: 22, padY: 10
+    });
+    valSprite.position.set(pt.x, pt.y + 1.2, 0);
+    var vw = valSprite.userData.textWidth / 65;
+    var vh = valSprite.userData.textHeight / 65;
+    valSprite.scale.set(vw, vh, 1);
+    valSprite.material.opacity = 0;
+    scene.add(valSprite);
+
+    // Period label below x-axis
+    var labelSprite = makeTextSprite(THREE, (pt.label || '').toUpperCase(), {
+      fontSize: 32, color: '#8a8580', weight: '600', letterSpacing: 0.2
+    });
+    labelSprite.position.set(pt.x, -0.7, 0);
+    var lw = labelSprite.userData.textWidth / 90;
+    var lh = labelSprite.userData.textHeight / 90;
+    labelSprite.scale.set(lw, lh, 1);
+    labelSprite.material.opacity = 0;
+    scene.add(labelSprite);
+
+    waypoints.push({
+      sphere: sphere, val: valSprite, label: labelSprite,
+      appearTime: 0.4 + w * 0.35,
+      valTime: 0.4 + w * 0.35 + 0.4,
+      labelTime: 0.4 + w * 0.35 + 0.2
+    });
+  }
+
+  // Title
+  if (d.title) {
+    var title = makeTextSprite(THREE, d.title, { fontSize: 72, color: '#ede9e0', weight: '400', italic: true });
+    title.position.set(0, IDEAL_MAX + 4, 0);
+    var tw = title.userData.textWidth / 60;
+    var th = title.userData.textHeight / 60;
+    title.scale.set(tw, th, 1);
+    scene.add(title);
+  }
+
+  return {
+    update: function(t) {
+      for (var s = 0; s < segments.length; s++) {
+        var dt = Math.max(0, Math.min(1, (t - segments[s].appearTime) / 0.5));
+        var eased = 1 - Math.pow(1 - dt, 3);
+        segments[s].mesh.scale.setScalar(eased);
+      }
+      for (var w = 0; w < waypoints.length; w++) {
+        var W = waypoints[w];
+        var wA = Math.max(0, Math.min(1, (t - W.appearTime) / 0.4));
+        var easedW = 1 - Math.pow(1 - wA, 3);
+        W.sphere.scale.setScalar(easedW);
+
+        var vA = Math.max(0, Math.min(1, (t - W.valTime) / 0.4));
+        W.val.material.opacity = vA;
+        var lA = Math.max(0, Math.min(1, (t - W.labelTime) / 0.4));
+        W.label.material.opacity = lA * 0.9;
+      }
+    }
+  };
+}
+
+/* ============ NEW SCENE: DONUT 3D ============ */
+
+function buildDonut3D(THREE, scene, sceneData) {
+  var d = sceneData.data || {};
+  var pct = Math.max(0, Math.min(100, d.percentage || 0));
+  var RADIUS = 4.5;
+  var TUBE = 1.1;
+  var SEGMENTS = 64;
+
+  // Background (full) ring
+  var bgGeo = new THREE.TorusGeometry(RADIUS, TUBE, 16, SEGMENTS);
+  var bgMat = new THREE.MeshStandardMaterial({
+    color: 0x2a2a35, roughness: 0.7, metalness: 0.1
+  });
+  var bgRing = new THREE.Mesh(bgGeo, bgMat);
+  bgRing.position.set(0, 4.5, 0);
+  bgRing.rotation.x = -Math.PI/2;
+  bgRing.rotation.y = 0;
+  bgRing.castShadow = true;
+  bgRing.receiveShadow = true;
+  scene.add(bgRing);
+
+  // Progress arc - built from a partial torus
+  // Three.js TorusGeometry arc param: start angle (always 0), length angle
+  // We animate the length angle in update()
+  var progressGroup = new THREE.Group();
+  progressGroup.position.set(0, 4.5, 0);
+  progressGroup.rotation.x = -Math.PI/2;
+  scene.add(progressGroup);
+
+  var progressMesh = null;
+
+  function updateProgressMesh(currentPct) {
+    if (progressMesh) {
+      progressGroup.remove(progressMesh);
+      progressMesh.geometry.dispose();
+    }
+    var arcLength = (currentPct / 100) * Math.PI * 2;
+    if (arcLength < 0.01) return;
+    var geo = new THREE.TorusGeometry(RADIUS, TUBE, 20, SEGMENTS, arcLength);
+    var color = new THREE.Color(0xd4a44c);
+    var mat = new THREE.MeshStandardMaterial({
+      color: color, roughness: 0.3, metalness: 0.35,
+      emissive: color, emissiveIntensity: 0.3
+    });
+    progressMesh = new THREE.Mesh(geo, mat);
+    // TorusGeometry starts the arc at angle 0 (east), we want to start at top (12 o'clock)
+    progressMesh.rotation.z = Math.PI / 2;
+    progressMesh.castShadow = true;
+    progressGroup.add(progressMesh);
+  }
+
+  // Large center percentage (floating in front of the ring)
+  var pctSprite = makeTextSprite(THREE, '0%', { fontSize: 200, color: '#ede9e0', weight: '900' });
+  pctSprite.position.set(0, 4.5, 0);
+  var pw = pctSprite.userData.textWidth / 55;
+  var ph = pctSprite.userData.textHeight / 55;
+  pctSprite.scale.set(pw, ph, 1);
+  scene.add(pctSprite);
+
+  var lastPctShown = -1;
+
+  // Label below
+  var labelSprite = null;
+  if (d.label) {
+    labelSprite = makeTextSprite(THREE, (d.label || '').toUpperCase(), {
+      fontSize: 36, color: '#d4a44c', weight: '600', letterSpacing: 0.25
+    });
+    labelSprite.position.set(0, 0.6, 0);
+    var lw = labelSprite.userData.textWidth / 75;
+    var lh = labelSprite.userData.textHeight / 75;
+    labelSprite.scale.set(lw, lh, 1);
+    labelSprite.material.opacity = 0;
+    scene.add(labelSprite);
+  }
+
+  // "was X%" if compare_to_pct provided
+  var cmpSprite = null;
+  if (d.compare_to_pct != null) {
+    cmpSprite = makeTextSprite(THREE, 'was ' + d.compare_to_pct + '%', {
+      fontSize: 32, color: '#8a8580', italic: true
+    });
+    cmpSprite.position.set(0, -0.3, 0);
+    var cw = cmpSprite.userData.textWidth / 85;
+    var ch = cmpSprite.userData.textHeight / 85;
+    cmpSprite.scale.set(cw, ch, 1);
+    cmpSprite.material.opacity = 0;
+    scene.add(cmpSprite);
+  }
+
+  // Title
+  if (d.title) {
+    var title = makeTextSprite(THREE, d.title, { fontSize: 68, color: '#ede9e0', weight: '400', italic: true });
+    title.position.set(0, 11, 0);
+    var tw = title.userData.textWidth / 60;
+    var th = title.userData.textHeight / 60;
+    title.scale.set(tw, th, 1);
+    scene.add(title);
+  }
+
+  return {
+    update: function(t) {
+      var progress = Math.max(0, Math.min(1, t / 1.5));
+      var eased = 1 - Math.pow(1 - progress, 3);
+      var currentPct = pct * eased;
+
+      // Update arc geometry
+      updateProgressMesh(currentPct);
+
+      // Update center percentage
+      var roundedPct = Math.floor(currentPct);
+      if (progress >= 0.98) roundedPct = Math.round(pct);
+      if (roundedPct !== lastPctShown) {
+        lastPctShown = roundedPct;
+        var oldSprite = pctSprite;
+        pctSprite = makeTextSprite(THREE, roundedPct + '%', { fontSize: 200, color: '#ede9e0', weight: '900' });
+        pctSprite.position.copy(oldSprite.position);
+        var npw = pctSprite.userData.textWidth / 55;
+        var nph = pctSprite.userData.textHeight / 55;
+        pctSprite.scale.set(npw, nph, 1);
+        scene.add(pctSprite);
+        scene.remove(oldSprite);
+        if (oldSprite.material.map) oldSprite.material.map.dispose();
+        oldSprite.material.dispose();
+      }
+
+      // Fade in label and compare at around 50% through
+      if (labelSprite) {
+        var lA = Math.max(0, Math.min(1, (t - 0.8) / 0.5));
+        labelSprite.material.opacity = lA;
+      }
+      if (cmpSprite) {
+        var cA = Math.max(0, Math.min(1, (t - 1.1) / 0.5));
+        cmpSprite.material.opacity = cA * 0.9;
+      }
     }
   };
 }
