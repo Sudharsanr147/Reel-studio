@@ -1,0 +1,1827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a0a0c">
+<title>Reel Infographic - Board Presentations</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
+<style>
+:root {
+  --bg: #0a0a0c;
+  --bg-2: #13131a;
+  --bg-3: #1c1c26;
+  --ink: #ede9e0;
+  --ink-dim: #8a8580;
+  --ink-faint: #4a4742;
+  --accent: #d4a44c;
+  --accent-hot: #e8b85a;
+  --blue: #3b82f6;
+  --green: #10b981;
+  --red: #ef4444;
+  --line: rgba(237, 233, 224, 0.08);
+  --line-strong: rgba(237, 233, 224, 0.16);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  min-height: 100vh;
+}
+h1, h2, h3 { font-family: 'Cormorant Garamond', serif; font-weight: 400; letter-spacing: -0.01em; line-height: 1.1; }
+.mono-label {
+  font-family: 'Inter', sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  font-weight: 600;
+}
+.mono-label.accent { color: var(--accent); }
+.hidden { display: none !important; }
+
+#loading-screen {
+  position: fixed; inset: 0;
+  background: var(--bg);
+  display: grid; place-items: center;
+  z-index: 9999;
+}
+.spinner {
+  width: 32px; height: 32px;
+  border: 2px solid #2a2a35;
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 16px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text {
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  text-align: center;
+}
+
+#auth-screen {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 460px;
+}
+@media (max-width: 900px) {
+  #auth-screen { grid-template-columns: 1fr; }
+  .auth-left { display: none; }
+  .auth-card { border-left: none !important; padding: 48px 24px !important; }
+}
+.auth-left {
+  background: #0f0f14;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 60px;
+  position: relative;
+  overflow: hidden;
+  border-right: 1px solid var(--line);
+}
+.auth-left::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 70% 50% at 30% 40%, rgba(212,164,76,.12) 0%, transparent 70%),
+              radial-gradient(ellipse 50% 40% at 75% 70%, rgba(59,130,246,.08) 0%, transparent 60%);
+  pointer-events: none;
+}
+.auth-left-content { position: relative; z-index: 1; text-align: center; }
+.auth-brand-big {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(80px, 12vw, 160px);
+  font-weight: 300;
+  font-style: italic;
+  color: var(--accent);
+  line-height: 1;
+  letter-spacing: -.02em;
+  text-shadow: 0 0 80px rgba(212,164,76,.25);
+  margin-bottom: 18px;
+  display: block;
+}
+.auth-tagline {
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: #3a3a48;
+}
+.auth-card {
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 60px 48px;
+  min-height: 100vh;
+  border-left: 1px solid var(--line);
+}
+.auth-card h1 { font-size: 40px; color: var(--ink); margin-bottom: 6px; }
+.auth-card h1 em { color: var(--accent); font-style: italic; }
+.auth-card > .mono-label { margin-bottom: 8px; }
+.auth-card > .muted { margin-bottom: 32px; font-size: 13px; line-height: 1.7; color: var(--ink-dim); }
+
+.field { margin-bottom: 20px; }
+.field label {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.field label .req { color: var(--red); margin-left: 3px; }
+.field input[type="text"], .field input[type="password"], .field textarea, .field select {
+  width: 100%;
+  background: var(--bg-2);
+  border: 1px solid var(--line-strong);
+  color: var(--ink);
+  padding: 12px 14px;
+  font: inherit;
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  transition: border-color 0.2s;
+  border-radius: 6px;
+}
+.field textarea { min-height: 140px; resize: vertical; line-height: 1.7; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+.field input:focus, .field textarea:focus, .field select:focus { outline: none; border-color: var(--accent); }
+.field .hint { margin-top: 6px; font-size: 11px; color: var(--ink-faint); line-height: 1.5; }
+
+input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px var(--bg-2) inset !important;
+  -webkit-text-fill-color: var(--ink) !important;
+  caret-color: var(--ink) !important;
+  transition: background-color 86400s ease 0s !important;
+}
+
+.error-text { color: var(--red); margin-top: 12px; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; min-height: 14px; }
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+.color-row { display: flex; gap: 10px; align-items: center; }
+.color-swatch {
+  width: 42px; height: 42px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  cursor: pointer;
+  overflow: hidden;
+  position: relative;
+}
+.color-swatch input { width: 100%; height: 100%; border: none; cursor: pointer; opacity: 0; position: absolute; inset: 0; }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--ink);
+  color: var(--bg);
+  border: none;
+  padding: 12px 22px;
+  font: inherit;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  cursor: pointer;
+  font-weight: 700;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+.btn:hover { background: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--bg); }
+.btn.primary:hover { background: var(--accent-hot); }
+.btn.ghost { background: transparent; border: 1px solid var(--line-strong); color: var(--ink); }
+.btn.ghost:hover { border-color: var(--accent); color: var(--accent); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn.wide-btn { width: 100%; justify-content: center; padding: 14px; font-size: 12px; }
+.btn.tiny { padding: 6px 12px; font-size: 10px; }
+.btn .loader { display: inline-block; width: 12px; height: 12px; border: 1.5px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: spin 0.7s linear infinite; }
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  backdrop-filter: blur(12px);
+}
+.brand { font-family: 'Cormorant Garamond', serif; font-size: 24px; font-style: italic; color: var(--accent); letter-spacing: -0.02em; }
+.brand-sub { font-size: 9px; letter-spacing: 0.25em; text-transform: uppercase; color: var(--ink-faint); margin-left: 14px; font-weight: 600; }
+.top-right { display: flex; align-items: center; gap: 12px; }
+.chip { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-dim); display: flex; align-items: center; gap: 6px; }
+.chip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ink-faint); }
+.chip.live .dot { background: var(--green); box-shadow: 0 0 8px var(--green); }
+
+main {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 32px 24px 80px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+}
+@media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+
+.input-panel h2, .preview-panel h2 { font-size: 32px; margin-bottom: 6px; font-style: italic; }
+.input-panel > p, .preview-panel > p { color: var(--ink-dim); font-size: 13px; margin-bottom: 28px; line-height: 1.7; }
+
+.preview-stage {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+.preview-stage canvas { width: 100%; height: 100%; display: block; }
+.preview-empty { text-align: center; padding: 40px; color: var(--ink-dim); }
+.preview-empty .icon { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 64px; color: var(--ink-faint); margin-bottom: 10px; }
+
+.scene-controls { margin-top: 16px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.scene-controls .mono-label { flex: 1; }
+
+.scene-nav { display: flex; gap: 4px; margin-top: 20px; overflow-x: auto; padding-bottom: 8px; }
+.scene-tile {
+  flex-shrink: 0;
+  width: 100px;
+  aspect-ratio: 16 / 9;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 6px 8px;
+  font-size: 10px;
+  transition: all 0.2s;
+}
+.scene-tile:hover { border-color: var(--line-strong); }
+.scene-tile.active { border-color: var(--accent); background: var(--bg-3); }
+.scene-tile .num { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-style: italic; color: var(--accent); }
+.scene-tile .type { color: var(--ink-dim); letter-spacing: 0.1em; text-transform: uppercase; font-size: 9px; }
+
+.json-viewer {
+  margin-top: 24px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--ink-dim);
+  max-height: 260px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.section-hr { height: 1px; background: var(--line); margin: 28px 0; }
+
+.modal-backdrop {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.75);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  display: none;
+}
+.modal-backdrop.open { display: block; }
+
+.settings-box {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--bg-2);
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  max-width: 480px;
+  width: calc(100vw - 48px);
+  padding: 32px;
+  z-index: 101;
+  display: none;
+}
+.settings-box.open { display: block; }
+.settings-box h3 { font-size: 26px; font-style: italic; margin-bottom: 12px; }
+.settings-box p { color: var(--ink-dim); font-size: 13px; margin-bottom: 18px; line-height: 1.7; }
+.settings-box code { background: var(--bg); padding: 2px 8px; color: var(--accent); font-size: 11px; border-radius: 3px; }
+.settings-box .row-buttons { display: flex; gap: 10px; margin-top: 18px; }
+
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  background: var(--ink);
+  color: var(--bg);
+  padding: 12px 22px;
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  font-weight: 600;
+  z-index: 200;
+  transition: transform 0.3s;
+  border-radius: 6px;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+.toast.error { background: var(--red); color: #fff; }
+
+#fatal-error {
+  position: fixed;
+  inset: 0;
+  background: #160808;
+  color: #ffb3b3;
+  padding: 40px 24px;
+  z-index: 300;
+  overflow: auto;
+}
+#fatal-error h2 { font-size: 32px; color: #ff6b6b; margin-bottom: 16px; }
+#fatal-error pre { background: #000; padding: 16px; border: 1px solid #333; white-space: pre-wrap; word-break: break-word; margin: 12px 0; font-family: monospace; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<div id="loading-screen">
+  <div>
+    <div class="spinner"></div>
+    <div class="loading-text">Connecting</div>
+  </div>
+</div>
+
+<div id="fatal-error" class="hidden">
+  <h2>Startup Error</h2>
+  <pre id="fatal-error-msg"></pre>
+</div>
+
+<div id="auth-screen" class="hidden">
+  <div class="auth-left">
+    <div class="auth-left-content">
+      <span class="auth-brand-big">Reel.</span>
+      <p class="auth-tagline">Infographic stories from data</p>
+    </div>
+  </div>
+  <div class="auth-card">
+    <h1><em>Sign in</em> to build.</h1>
+    <p class="mono-label">REEL INFOGRAPHIC</p>
+    <p class="muted">Same account as your Reel studio. Your Anthropic API key is stored once in your profile and available on every device.</p>
+    <div class="field">
+      <label>Email</label>
+      <input type="text" id="auth-email" autocomplete="email" inputmode="email">
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="auth-password" autocomplete="current-password">
+      <div class="hint">Same credentials as the main Reel portal.</div>
+    </div>
+    <button class="btn primary wide-btn" id="btn-signin">Sign In</button>
+    <p id="auth-error" class="error-text"></p>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+  <header class="topbar">
+    <div>
+      <span class="brand">Reel.</span>
+      <span class="brand-sub">INFOGRAPHIC</span>
+    </div>
+    <div class="top-right">
+      <div class="chip" id="api-chip">
+        <div class="dot"></div>
+        <span id="api-status">...</span>
+      </div>
+      <div class="chip" id="user-chip">
+        <span id="user-email">-</span>
+      </div>
+      <button class="btn ghost tiny" id="btn-settings">Key</button>
+      <button class="btn ghost tiny" id="btn-signout">Out</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="input-panel">
+      <span class="mono-label accent">Step 01</span>
+      <h2>Tell your <em style="color:var(--accent);">story</em>.</h2>
+      <p>Describe your presentation in plain English. Give the numbers, the narrative, the tone. Claude turns it into a scene-by-scene storyboard.</p>
+
+      <div class="field">
+        <label>Presentation title</label>
+        <input type="text" id="pres-title" placeholder="Q3 FY26 Board Update">
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label>Company / org</label>
+          <input type="text" id="pres-company" placeholder="Acme Manufacturing">
+        </div>
+        <div class="field">
+          <label>Author</label>
+          <input type="text" id="pres-author" placeholder="Finance Team">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Narrative and data <span class="req">*</span></label>
+        <textarea id="pres-narrative" placeholder="Example: Q3 revenue was Rs 142 crore, up 23% YoY. South region led with Rs 58 crore, North flat at Rs 34 crore, exports grew 40% to Rs 28 crore. Gross margin improved from 28% to 31%. Net profit Rs 18 crore, up 35%. Order book strong at Rs 45 crore for Q4."></textarea>
+        <div class="hint">Include actual numbers, the story arc you want, and any key messages.</div>
+      </div>
+
+      <div class="grid-2">
+        <div class="field">
+          <label>Tone</label>
+          <select id="pres-tone">
+            <option value="conservative">Conservative</option>
+            <option value="balanced" selected>Balanced</option>
+            <option value="confident">Confident</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Target duration</label>
+          <select id="pres-duration">
+            <option value="30">30 seconds</option>
+            <option value="60" selected>60 seconds</option>
+            <option value="90">90 seconds</option>
+            <option value="120">2 minutes</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Brand colours</label>
+        <div class="color-row">
+          <span class="mono-label">Primary</span>
+          <div class="color-swatch" style="background:#d4a44c;"><input type="color" id="color-primary" value="#d4a44c"></div>
+          <span class="mono-label">Accent</span>
+          <div class="color-swatch" style="background:#3b82f6;"><input type="color" id="color-accent" value="#3b82f6"></div>
+        </div>
+      </div>
+
+      <div class="section-hr"></div>
+
+      <button class="btn primary wide-btn" id="btn-generate">
+        <span id="gen-btn-text">Generate Storyboard</span>
+      </button>
+    </section>
+
+    <section class="preview-panel">
+      <span class="mono-label accent">Step 02</span>
+      <h2>Preview your <em style="color:var(--accent);">video</em>.</h2>
+      <p>Each scene renders on a 16:9 canvas. Use the tiles below to jump between scenes. Phase 2 adds MP4 export.</p>
+
+      <div class="preview-stage" id="preview-stage">
+        <div class="preview-empty" id="preview-empty">
+          <div class="icon">+</div>
+          <div class="mono-label">No storyboard yet</div>
+          <p style="margin-top:10px;font-size:12px;">Fill in the narrative on the left and generate.</p>
+        </div>
+        <canvas id="scene-canvas" width="1280" height="720" class="hidden"></canvas>
+      </div>
+
+      <div class="scene-controls hidden" id="scene-controls">
+        <span class="mono-label" id="current-scene-label">Scene 1 / 1</span>
+        <button class="btn ghost tiny" id="btn-prev">Prev</button>
+        <button class="btn ghost tiny" id="btn-next">Next</button>
+        <button class="btn ghost tiny" id="btn-replay">Replay</button>
+      </div>
+
+      <div class="scene-nav hidden" id="scene-nav"></div>
+      <div class="json-viewer hidden" id="json-viewer"></div>
+    </section>
+  </main>
+</div>
+
+<div class="modal-backdrop" id="settings-backdrop"></div>
+<div class="settings-box" id="settings-box">
+  <h3>Anthropic API Key</h3>
+  <p>Used to send your narrative to Claude. Get a key from <code>console.anthropic.com</code>. Billing must be enabled. Typical cost: about 1 Rupee per generation.</p>
+  <p>Key is stored in your Reel profile (not localStorage). It syncs across all your devices.</p>
+  <div class="field">
+    <label>Anthropic API Key</label>
+    <input type="password" id="api-key-input" placeholder="sk-ant-...">
+    <div class="hint">Starts with <code>sk-ant-</code></div>
+  </div>
+  <div class="row-buttons">
+    <button class="btn ghost wide-btn" id="btn-settings-cancel">Cancel</button>
+    <button class="btn primary wide-btn" id="btn-settings-save">Save Key</button>
+  </div>
+</div>
+
+<div class="toast" id="toast">Ready</div>
+
+<script>
+window.addEventListener('error', function(e) {
+  showFatalError((e.message || 'Error') + '\nFile: ' + (e.filename || '?') + '\nLine: ' + (e.lineno || '?') + '\n\n' + (e.error && e.error.stack ? e.error.stack : ''));
+});
+window.addEventListener('unhandledrejection', function(e) {
+  showFatalError('Promise rejected: ' + (e.reason && e.reason.message ? e.reason.message : e.reason) + '\n\n' + (e.reason && e.reason.stack ? e.reason.stack : ''));
+});
+function showFatalError(msg) {
+  var el = document.getElementById('fatal-error');
+  var det = document.getElementById('fatal-error-msg');
+  if (el && det) { el.classList.remove('hidden'); det.textContent = msg; }
+}
+
+function $(id) { return document.getElementById(id); }
+
+function toast(msg, isError) {
+  var el = $('toast');
+  el.textContent = msg;
+  if (isError) el.classList.add('error'); else el.classList.remove('error');
+  el.classList.add('show');
+  setTimeout(function(){ el.classList.remove('show'); }, 2600);
+}
+
+function showScreen(id) {
+  var loading = $('loading-screen');
+  if (loading) loading.style.display = 'none';
+  ['auth-screen', 'app'].forEach(function(s){
+    var el = $(s);
+    if (!el) return;
+    if (s === id) el.classList.remove('hidden');
+    else el.classList.add('hidden');
+  });
+}
+
+var STATE = { user: null, apiKey: null, storyboard: null, currentScene: 0, animationId: null };
+var db = null;
+var auth = null;
+
+var FB_CONFIG = {
+  apiKey: 'AIzaSyDovy8Pqg4a7Gm1ZJ7ix6F1-b90sqo-nrY',
+  authDomain: 'reel-studio-46495.firebaseapp.com',
+  databaseURL: 'https://reel-studio-46495-default-rtdb.asia-southeast1.firebasedatabase.app',
+  projectId: 'reel-studio-46495',
+  storageBucket: 'reel-studio-46495.firebasestorage.app',
+  messagingSenderId: '1088923527470',
+  appId: '1:1088923527470:web:6fbf1915840044a29572bf'
+};
+
+function initFirebase() {
+  try {
+    firebase.initializeApp(FB_CONFIG);
+    auth = firebase.auth();
+    db = firebase.database();
+    return true;
+  } catch (e) {
+    console.error('Firebase init failed', e);
+    return false;
+  }
+}
+
+function bootstrap() {
+  if (!initFirebase()) { showFatalError('Could not connect to Firebase.'); return; }
+  auth.onAuthStateChanged(function(user) {
+    if (user) {
+      STATE.user = user;
+      $('user-email').textContent = user.email;
+      loadApiKeyFromDb().then(function() {
+        showScreen('app');
+        updateApiStatus();
+      }).catch(function(e) {
+        console.error('Load key failed', e);
+        showScreen('app');
+        updateApiStatus();
+      });
+    } else {
+      showScreen('auth-screen');
+    }
+  });
+}
+
+function keyRef() { return db.ref('users/' + STATE.user.uid + '/settings/anthropic_api_key'); }
+
+function loadApiKeyFromDb() {
+  return keyRef().once('value').then(function(snap) {
+    STATE.apiKey = snap.val() || null;
+  });
+}
+
+function saveApiKeyToDb(key) {
+  return keyRef().set(key).then(function() {
+    STATE.apiKey = key;
+    updateApiStatus();
+  });
+}
+
+function updateApiStatus() {
+  var chip = $('api-chip');
+  var status = $('api-status');
+  if (STATE.apiKey) { chip.classList.add('live'); status.textContent = 'KEY SET'; }
+  else { chip.classList.remove('live'); status.textContent = 'NO KEY'; }
+}
+
+function handleSignIn() {
+  var email = $('auth-email').value.trim();
+  var password = $('auth-password').value;
+  var errEl = $('auth-error');
+  errEl.textContent = '';
+  if (!email || !password) { errEl.textContent = 'Email and password required.'; return; }
+  var btn = $('btn-signin');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loader"></span> Signing in';
+
+  auth.signInWithEmailAndPassword(email, password).catch(function(e) {
+    var code = e.code || '';
+    if (code === 'auth/user-not-found' || code === 'auth/invalid-login-credentials' || code === 'auth/invalid-credential') {
+      auth.createUserWithEmailAndPassword(email, password).catch(function(e2) {
+        errEl.textContent = e2.message;
+        btn.disabled = false;
+        btn.innerHTML = 'Sign In';
+      });
+    } else {
+      errEl.textContent = e.message;
+      btn.disabled = false;
+      btn.innerHTML = 'Sign In';
+    }
+  });
+}
+
+$('btn-signin').onclick = handleSignIn;
+$('auth-password').addEventListener('keypress', function(e) {
+  if (e.key === 'Enter') handleSignIn();
+});
+
+$('btn-signout').onclick = function() { auth.signOut(); };
+
+function openSettings() {
+  $('api-key-input').value = STATE.apiKey || '';
+  $('settings-backdrop').classList.add('open');
+  $('settings-box').classList.add('open');
+}
+function closeSettings() {
+  $('settings-backdrop').classList.remove('open');
+  $('settings-box').classList.remove('open');
+}
+
+$('btn-settings').onclick = openSettings;
+$('btn-settings-cancel').onclick = closeSettings;
+$('settings-backdrop').onclick = closeSettings;
+
+$('btn-settings-save').onclick = function() {
+  var key = $('api-key-input').value.trim();
+  if (key && !key.startsWith('sk-ant-')) { toast('Key must start with sk-ant-', true); return; }
+  var btn = $('btn-settings-save');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loader"></span> Saving';
+  saveApiKeyToDb(key || null).then(function() {
+    closeSettings();
+    toast(key ? 'Key saved' : 'Key cleared');
+  }).catch(function(e) {
+    toast('Save failed: ' + e.message, true);
+  }).finally(function() {
+    btn.disabled = false;
+    btn.textContent = 'Save Key';
+  });
+};
+
+['color-primary', 'color-accent'].forEach(function(id) {
+  $(id).oninput = function(e) { e.target.parentElement.style.background = e.target.value; };
+});
+
+var STORYBOARD_SYSTEM_PROMPT = [
+  'You are a cinematic infographic video director for executive presentations.',
+  'Your job is to turn data into VISUAL STORIES, not boring slides.',
+  'Always prefer metaphor-rich scene types over plain charts where possible.',
+  '',
+  'CRITICAL OUTPUT FORMAT:',
+  '- Your entire response must be a single JSON array of scene objects',
+  '- Start your response with [ and end with ]',
+  '- Do NOT wrap the array in an object, do NOT write "{ scenes: [...] }"',
+  '- Do NOT include prose, explanation, or markdown code fences',
+  '',
+  '=== SCENE TYPES ===',
+  '',
+  'STANDARD SCENES:',
+  '- title: Opening title card. data: {title, subtitle, company}',
+  '- closing: End frame. data: {company, tagline}',
+  '- callout: Large text message. Use for key takeaways. data: {headline, sub}',
+  '- headline_number: One huge number with delta. data: {value, label, delta_pct, delta_direction: "up"|"down"|"flat", prefix: "$"|"Rs "|""}',
+  '- bar_chart: Plain bars. Use sparingly. data: {title, items: [{label, value, highlight}], unit}',
+  '- donut: Single percentage ring. data: {title, percentage, label, compare_to_pct}',
+  '- comparison: Two values side by side with arrow. data: {title, left_label, left_value, right_label, right_value, unit}',
+  '- timeline: Events in sequence. data: {title, events: [{label, value}]}',
+  '',
+  'CINEMATIC METAPHOR SCENES (PREFER THESE WHEN APPROPRIATE):',
+  '- ascending_stairs: Rising staircase where each step is a period value. Use for growth OVER TIME (monthly/quarterly trends).',
+  '  data: {title, steps: [{label, value}], unit, prefix}',
+  '- summit_climb: Mountain path drawing upward, flag planted at peak. Use for ACHIEVEMENT or hitting a TARGET.',
+  '  data: {title, points: [{label, value}], unit, prefix, goal_label}',
+  '- bottle_fill: Container filling with liquid. Use for PROGRESS TOWARD GOAL, capacity utilization, margin achievement.',
+  '  data: {title, percentage, label, target_pct (optional)}',
+  '- orbit_satellites: Central node with orbiting satellites sized by value. Use for SEGMENTS, REGIONS, CONTRIBUTORS.',
+  '  data: {title, center_label, items: [{label, value}], unit, prefix}',
+  '- runway_takeoff: Line rising from a runway like a plane. Use for LAUNCH, MOMENTUM, FORWARD OUTLOOK.',
+  '  data: {title, headline_value, headline_label, unit, prefix}',
+  '- split_before_after: Vertical split, dim old value vs bright new value. Use for TRANSFORMATION, TURNAROUND, IMPROVEMENT.',
+  '  data: {title, before_label, before_value, before_sub, after_label, after_value, after_sub, unit, delta_text}',
+  '',
+  '=== DIRECTING RULES ===',
+  '',
+  '1. Open with "title". Close with "closing". Always.',
+  '2. Between title and closing, mix MIN ONE metaphor scene (ascending_stairs, summit_climb, bottle_fill, orbit_satellites, runway_takeoff, split_before_after).',
+  '3. Pacing: alternate bold-impact scenes (callout, headline_number) with data scenes. Never three similar scenes in a row.',
+  '4. Match metaphor to meaning:',
+  '   - Monthly/quarterly growth -> ascending_stairs',
+  '   - Hit a target number -> summit_climb',
+  '   - % progress or margin -> bottle_fill',
+  '   - Breakdown by segment/region -> orbit_satellites',
+  '   - New launch / forward outlook -> runway_takeoff',
+  '   - Old vs new state -> split_before_after',
+  '5. Durations: scenes of 5-10 seconds each. Total should match target_duration roughly.',
+  '6. Each scene must have: "type", "duration", "data"',
+  '7. Use actual numbers from the user. Do not invent figures.',
+  '8. For 60s: aim for 6-8 scenes, with at least 2 metaphor scenes.',
+  '',
+  'Example:',
+  '[{"type":"title","duration":5,"data":{"title":"Q3 Results","subtitle":"FY26","company":"Acme"}},{"type":"ascending_stairs","duration":8,"data":{"title":"Revenue climbed quarter by quarter","steps":[{"label":"Q1","value":98},{"label":"Q2","value":115},{"label":"Q3","value":142}],"unit":"Cr","prefix":"Rs "}},{"type":"closing","duration":3,"data":{"company":"Acme","tagline":"Thank you"}}]'
+].join('\n');
+
+async function generateStoryboard() {
+  if (!STATE.apiKey) { toast('Set your Anthropic API key first', true); openSettings(); return; }
+  var narrative = $('pres-narrative').value.trim();
+  if (!narrative) { toast('Narrative is required', true); return; }
+
+  var userInput = {
+    title: $('pres-title').value.trim() || 'Untitled',
+    company: $('pres-company').value.trim() || '',
+    author: $('pres-author').value.trim() || '',
+    narrative: narrative,
+    tone: $('pres-tone').value,
+    target_duration: parseInt($('pres-duration').value, 10)
+  };
+
+  var btn = $('btn-generate');
+  var btnText = $('gen-btn-text');
+  btn.disabled = true;
+  btnText.innerHTML = '<span class="loader"></span> Generating';
+
+  try {
+    var response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': STATE.apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 2000,
+        system: STORYBOARD_SYSTEM_PROMPT,
+        messages: [{
+          role: 'user',
+          content:
+            'Title: ' + userInput.title + '\n' +
+            'Company: ' + userInput.company + '\n' +
+            'Author: ' + userInput.author + '\n' +
+            'Tone: ' + userInput.tone + '\n' +
+            'Target duration: ' + userInput.target_duration + ' seconds\n\n' +
+            'Narrative and data:\n' + userInput.narrative + '\n\n' +
+            'Generate the JSON storyboard now.'
+        }]
+      })
+    });
+
+    if (!response.ok) {
+      var errText = await response.text();
+      throw new Error('API error ' + response.status + ': ' + errText);
+    }
+
+    var data = await response.json();
+    var content = data.content && data.content[0] && data.content[0].text;
+    if (!content) throw new Error('Empty response from Claude');
+
+    content = content.replace(/^```json\s*/i, '').replace(/^```\s*/, '').replace(/\s*```$/, '').trim();
+
+    var storyboard;
+    try { storyboard = JSON.parse(content); }
+    catch (e) { throw new Error('Could not parse JSON from Claude. Raw response:\n' + content.substring(0, 800)); }
+
+    if (!Array.isArray(storyboard)) {
+      // Claude sometimes wraps the array in an object. Look for the scene array.
+      var found = null;
+      if (storyboard.scenes && Array.isArray(storyboard.scenes)) found = storyboard.scenes;
+      else if (storyboard.storyboard && Array.isArray(storyboard.storyboard)) found = storyboard.storyboard;
+      else if (storyboard.data && Array.isArray(storyboard.data)) found = storyboard.data;
+      else {
+        // Last resort: look for any array property whose items have a 'type' field (our scene signature)
+        for (var k in storyboard) {
+          if (Array.isArray(storyboard[k]) && storyboard[k].length > 0 && storyboard[k][0] && storyboard[k][0].type) {
+            found = storyboard[k];
+            break;
+          }
+        }
+      }
+      if (found) storyboard = found;
+      else throw new Error('Expected a JSON array of scenes. Claude returned an object with keys: ' + Object.keys(storyboard).join(', ') + '\n\nRaw response (first 600 chars):\n' + content.substring(0, 600));
+    }
+    if (storyboard.length === 0) throw new Error('Storyboard has no scenes');
+
+    STATE.storyboard = storyboard;
+    STATE.currentScene = 0;
+    renderStoryboard();
+    toast('Storyboard ready: ' + storyboard.length + ' scenes');
+  } catch (err) {
+    console.error(err);
+    toast('Generation failed', true);
+    showFatalError('Storyboard generation failed:\n\n' + err.message);
+  } finally {
+    btn.disabled = false;
+    btnText.textContent = 'Generate Storyboard';
+  }
+}
+
+$('btn-generate').onclick = generateStoryboard;
+
+function renderStoryboard() {
+  var sb = STATE.storyboard;
+  if (!sb) return;
+
+  $('preview-empty').classList.add('hidden');
+  $('scene-canvas').classList.remove('hidden');
+  $('scene-controls').classList.remove('hidden');
+  $('scene-nav').classList.remove('hidden');
+  $('json-viewer').classList.remove('hidden');
+
+  var nav = $('scene-nav');
+  nav.innerHTML = '';
+  for (var i = 0; i < sb.length; i++) {
+    var tile = document.createElement('div');
+    tile.className = 'scene-tile' + (i === STATE.currentScene ? ' active' : '');
+    tile.setAttribute('data-idx', i);
+    tile.innerHTML = '<div class="num">' + (i + 1) + '</div><div class="type">' + (sb[i].type || '?') + ' - ' + (sb[i].duration || 0) + 's</div>';
+    tile.onclick = (function(idx) { return function() { gotoScene(idx); }; })(i);
+    nav.appendChild(tile);
+  }
+
+  $('json-viewer').textContent = JSON.stringify(sb, null, 2);
+  gotoScene(STATE.currentScene);
+}
+
+function gotoScene(idx) {
+  if (!STATE.storyboard) return;
+  if (idx < 0 || idx >= STATE.storyboard.length) return;
+  STATE.currentScene = idx;
+
+  var tiles = document.querySelectorAll('.scene-tile');
+  for (var i = 0; i < tiles.length; i++) {
+    if (parseInt(tiles[i].getAttribute('data-idx'), 10) === idx) tiles[i].classList.add('active');
+    else tiles[i].classList.remove('active');
+  }
+
+  $('current-scene-label').textContent = 'Scene ' + (idx + 1) + ' / ' + STATE.storyboard.length;
+
+  if (STATE.animationId) { cancelAnimationFrame(STATE.animationId); STATE.animationId = null; }
+
+  playScene(STATE.storyboard[idx]);
+}
+
+$('btn-prev').onclick = function() { gotoScene(STATE.currentScene - 1); };
+$('btn-next').onclick = function() { gotoScene(STATE.currentScene + 1); };
+$('btn-replay').onclick = function() { gotoScene(STATE.currentScene); };
+
+function getColors() {
+  return {
+    bg: '#0a0a0c',
+    ink: '#ede9e0',
+    inkDim: '#8a8580',
+    inkFaint: '#4a4742',
+    primary: $('color-primary').value || '#d4a44c',
+    accent: $('color-accent').value || '#3b82f6',
+    green: '#10b981',
+    red: '#ef4444'
+  };
+}
+
+var W = 1280, H = 720;
+
+function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+function drawBackground(ctx, c) {
+  var grad = ctx.createRadialGradient(W/2, H/2, 50, W/2, H/2, W);
+  grad.addColorStop(0, '#13131a');
+  grad.addColorStop(1, c.bg);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = c.primary;
+  ctx.font = 'italic 32px "Cormorant Garamond", serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText('Reel.', 48, 44);
+}
+
+function drawTitleScene(ctx, scene, p, c) {
+  drawBackground(ctx, c);
+  var d = scene.data || {};
+  var intro = easeOutCubic(clamp(p * 2, 0, 1));
+  var sublineAppear = easeOutCubic(clamp((p - 0.3) * 2, 0, 1));
+
+  ctx.fillStyle = c.ink;
+  ctx.globalAlpha = intro;
+  ctx.font = '800 86px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  wrapText(ctx, d.title || 'Untitled Presentation', W/2, H/2 - 40, W * 0.85, 100);
+
+  ctx.globalAlpha = sublineAppear;
+  ctx.font = 'italic 400 32px "Cormorant Garamond", serif';
+  ctx.fillStyle = c.primary;
+  ctx.fillText(d.subtitle || '', W/2, H/2 + 60);
+
+  ctx.fillStyle = c.inkDim;
+  ctx.font = '600 14px Inter, sans-serif';
+  if (d.company) drawTrackedText(ctx, d.company.toUpperCase(), W/2, 120, 4);
+
+  ctx.globalAlpha = 1;
+}
+
+function drawHeadlineNumberScene(ctx, scene, p, c) {
+  drawBackground(ctx, c);
+  var d = scene.data || {};
+  var progress = easeOutCubic(clamp(p * 1.2, 0, 1));
+  var value = d.value || 0;
+  var displayStr;
+  var finalStr = String(value);
+  var isDecimal = finalStr.indexOf('.') >= 0;
+  if (progress >= 0.98) {
+    displayStr = isDecimal ? String(value) : Math.floor(value).toLocaleString('en-IN');
+  } else {
+    var display = value * progress;
+    displayStr = isDecimal ? display.toFixed(finalStr.split('.')[1].length) : Math.floor(display).toLocaleString('en-IN');
+  }
+  var prefix = d.prefix || '';
+  var fullText = prefix + displayStr;
+
+  ctx.fillStyle = c.primary;
+  ctx.font = '900 180px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(fullText, W/2, H/2 - 20);
+
+  ctx.fillStyle = c.ink;
+  ctx.font = '400 32px Inter, sans-serif';
+  ctx.fillText((d.label || '').toUpperCase(), W/2, H/2 + 110);
+
+  if (d.delta_pct != null && progress > 0.7) {
+    var deltaAlpha = easeOutCubic(clamp((p - 0.5) * 2, 0, 1));
+    ctx.globalAlpha = deltaAlpha;
+    var dir = d.delta_direction || 'up';
+    var arrow = dir === 'up' ? '\u2191' : (dir === 'down' ? '\u2193' : '\u2192');
+    var color = dir === 'up' ? c.green : (dir === 'down' ? c.red : c.inkDim);
+    ctx.fillStyle = color;
+    ctx.font = '700 40px Inter, sans-serif';
+    var sign = d.delta_pct > 0 ? '+' : '';
+    ctx.fillText(arrow + ' ' + sign + d.delta_pct + '% YoY', W/2, H/2 + 180);
+    ctx.globalAlpha = 1;
+  }
+}
+
+function drawBarChartScene(ctx, scene, p, c) {
+  drawBackground(ctx, c);
+  var d = scene.data || {};
+  var items = d.items || [];
+  if (items.length === 0) return;
+
+  ctx.fillStyle = c.ink;
+  ctx.font = '600 42px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText(d.title || '', 120, 140);
+
+  var max = 0;
+  for (var i = 0; i < items.length; i++) if (items[i].value > max) max = items[i].value;
+  max = max * 1.1;
+
+  var chartX = 120, chartY = 240;
+  var chartW = W - 240;
+  var chartH = H - 320;
+  var barH = Math.min(60, (chartH - 20 * (items.length - 1)) / items.length);
+  var gap = 20;
+
+  for (var j = 0; j < items.length; j++) {
+    var item = items[j];
+    var yPos = chartY + j * (barH + gap);
+    var itemProgress = clamp((p - j * 0.08) * 1.5, 0, 1);
+    itemProgress = easeOutCubic(itemProgress);
+    var ratio = (item.value / max) * itemProgress;
+    var w = chartW * 0.6 * ratio;
+
+    ctx.fillStyle = c.inkDim;
+    ctx.font = '500 16px Inter, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(item.label.toUpperCase(), chartX, yPos + barH/2);
+
+    var barX = chartX + 200;
+    ctx.fillStyle = item.highlight ? c.primary : c.accent;
+    ctx.globalAlpha = item.highlight ? 1 : 0.75;
+    ctx.fillRect(barX, yPos, w, barH);
+    ctx.globalAlpha = 1;
+
+    if (itemProgress > 0.6) {
+      ctx.fillStyle = c.ink;
+      ctx.font = '700 22px Inter, sans-serif';
+      ctx.textAlign = 'left';
+      var displayVal = (item.value * itemProgress).toFixed(0);
+      if (itemProgress >= 0.98) displayVal = String(item.value);
+      var unit = d.unit ? ' ' + d.unit : '';
+      ctx.fillText(displayVal + unit, barX + w + 16, yPos + barH/2);
+    }
+  }
+}
+
+function drawDonutScene(ctx, scene, p, c) {
+  drawBackground(ctx, c);
+  var d = scene.data || {};
+
+  ctx.fillStyle = c.ink;
+  ctx.font = '600 38px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(d.title || '', W/2, 140);
+
+  var pct = Math.min(100, Math.max(0, d.percentage || 0));
+  var progress = easeOutCubic(clamp(p * 1.2, 0, 1));
+  var displayPct = pct * progress;
+  var cx = W/2, cy = H/2 + 30;
+  var radius = 150, thickness = 28;
+
+  ctx.strokeStyle = '#2a2a35';
+  ctx.lineWidth = thickness;
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.strokeStyle = c.primary;
+  ctx.lineWidth = thickness;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  var start = -Math.PI/2;
+  var end = start + (displayPct/100) * Math.PI * 2;
+  ctx.arc(cx, cy, radius, start, end);
+  ctx.stroke();
+
+  ctx.fillStyle = c.ink;
+  ctx.font = '900 90px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(displayPct.toFixed(0) + '%', cx, cy - 8);
+
+  ctx.fillStyle = c.inkDim;
+  ctx.font = '500 20px Inter, sans-serif';
+  ctx.fillText((d.label || '').toUpperCase(), cx, cy + 60);
+
+  if (d.compare_to_pct != null && p > 0.5) {
+    ctx.globalAlpha = clamp((p - 0.5) * 2, 0, 1);
+    ctx.fillStyle = c.inkDim;
+    ctx.font = 'italic 400 22px "Cormorant Garamond", serif';
+    ctx.fillText('was ' + d.compare_to_pct + '%', cx, cy + radius + 60);
+    ctx.globalAlpha = 1;
+  }
+}
+
+function drawComparisonScene(ctx, scene, p, c) {
+  drawBackground(ctx, c);
+  var d = scene.data || {};
+
+  ctx.fillStyle = c.ink;
+  ctx.font = '600 38px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(d.title || '', W/2, 140);
+
+  var leftA = easeOutCubic(clamp(p * 2, 0, 1));
+  var rightA = easeOutCubic(clamp((p - 0.25) * 2, 0, 1));
+
+  ctx.globalAlpha = leftA;
+  ctx.fillStyle = c.inkDim;
+  ctx.font = '900 120px Inter, sans-serif';
+  ctx.fillText((d.left_value || '') + (d.unit || ''), W * 0.28, H/2);
+  ctx.fillStyle = c.inkFaint;
+  ctx.font = '500 18px Inter, sans-serif';
+  ctx.fillText((d.left_label || '').toUpperCase(), W * 0.28, H/2 + 110);
+
+  ctx.globalAlpha = clamp((p - 0.2) * 3, 0, 1);
+  ctx.fillStyle = c.primary;
+  ctx.font = '300 80px Inter, sans-serif';
+  ctx.fillText('\u2192', W/2, H/2);
+
+  ctx.globalAlpha = rightA;
+  ctx.fillStyle = c.primary;
+  ctx.font = '900 140px Inter, sans-serif';
+  ctx.fillText((d.right_value || '') + (d.unit || ''), W * 0.72, H/2);
+  ctx.fillStyle = c.ink;
+  ctx.font = '500 18px Inter, sans-serif';
+  ctx.fillText((d.right_label || '').toUpperCase(), W * 0.72, H/2 + 130);
+  ctx.globalAlpha = 1;
+}
+
+function drawTimelineScene(ctx, scene, p, c) {
+  drawBackground(ctx, c);
+  var d = scene.data || {};
+  var events = d.events || [];
+
+  ctx.fillStyle = c.ink;
+  ctx.font = '600 38px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText(d.title || '', 120, 140);
+
+  var y = H * 0.6;
+  var startX = 160, endX = W - 160;
+  var lineProgress = easeOutCubic(clamp(p * 1.5, 0, 1));
+  ctx.strokeStyle = c.inkFaint;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(startX, y);
+  ctx.lineTo(startX + (endX - startX) * lineProgress, y);
+  ctx.stroke();
+
+  for (var i = 0; i < events.length; i++) {
+    var ex = startX + (i / Math.max(1, events.length - 1)) * (endX - startX);
+    var appear = clamp((p - 0.3 - i * 0.15) * 3, 0, 1);
+    if (appear <= 0) continue;
+    ctx.globalAlpha = appear;
+    ctx.fillStyle = c.primary;
+    ctx.beginPath();
+    ctx.arc(ex, y, 10, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = c.ink;
+    ctx.font = '600 28px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(events[i].label || '', ex, y - 40);
+    ctx.fillStyle = c.inkDim;
+    ctx.font = '500 18px Inter, sans-serif';
+    ctx.textBaseline = 'top';
+    ctx.fillText(events[i].value || '', ex, y + 28);
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawCalloutScene(ctx, scene, p, c) {
+  drawBackground(ctx, c);
+  var d = scene.data || {};
+  var intro = easeOutCubic(clamp(p * 2, 0, 1));
+  ctx.fillStyle = c.ink;
+  ctx.globalAlpha = intro;
+  ctx.font = '800 72px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  wrapText(ctx, d.headline || '', W/2, H/2 - 30, W * 0.8, 90);
+  ctx.globalAlpha = easeOutCubic(clamp((p - 0.3) * 2, 0, 1));
+  ctx.fillStyle = c.primary;
+  ctx.font = 'italic 400 28px "Cormorant Garamond", serif';
+  ctx.fillText(d.sub || '', W/2, H/2 + 100);
+  ctx.globalAlpha = 1;
+}
+
+function drawClosingScene(ctx, scene, p, c) {
+  drawBackground(ctx, c);
+  var d = scene.data || {};
+  ctx.globalAlpha = easeOutCubic(clamp(p * 1.5, 0, 1));
+  ctx.fillStyle = c.primary;
+  ctx.font = 'italic 400 72px "Cormorant Garamond", serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(d.company || 'Thank you.', W/2, H/2 - 10);
+  ctx.globalAlpha = easeOutCubic(clamp((p - 0.3) * 2, 0, 1));
+  ctx.fillStyle = c.inkDim;
+  ctx.font = '500 18px Inter, sans-serif';
+  drawTrackedText(ctx, (d.tagline || '').toUpperCase(), W/2, H/2 + 60, 4);
+  ctx.globalAlpha = 1;
+}
+
+/* ============ CREATIVE SCENE TYPES ============ */
+
+function drawAscendingStairsScene(ctx, scene, p, c) {
+  drawBackground(ctx, c);
+  var d = scene.data || {};
+  var steps = d.steps || [];
+  if (steps.length === 0) return;
+
+  // Title
+  ctx.fillStyle = c.ink;
+  ctx.font = '600 38px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText(d.title || '', 120, 130);
+
+  var baseY = H - 120;
+  var leftX = 180;
+  var stepW = Math.min(150, (W - 360) / steps.length);
+  var stepDepth = 28; // vertical rise per step
+  var maxVal = 0;
+  for (var m = 0; m < steps.length; m++) if (steps[m].value > maxVal) maxVal = steps[m].value;
+
+  // Draw each step, lighting up in sequence
+  for (var i = 0; i < steps.length; i++) {
+    var stepProgress = clamp((p - i * 0.12) * 1.5, 0, 1);
+    stepProgress = easeOutCubic(stepProgress);
+    if (stepProgress <= 0) continue;
+
+    var x = leftX + i * stepW;
+    var heightRatio = steps[i].value / maxVal;
+    // Step height grows with progression, step rises in a staircase
+    var stepTopY = baseY - (i + 1) * stepDepth - heightRatio * 180 * stepProgress;
+    var stepBottomY = baseY - i * stepDepth;
+
+    // Step block
+    ctx.globalAlpha = 0.3 + 0.7 * stepProgress;
+    ctx.fillStyle = i === steps.length - 1 ? c.primary : c.accent;
+    ctx.fillRect(x, stepTopY, stepW - 8, stepBottomY - stepTopY);
+
+    // Top edge highlight
+    ctx.globalAlpha = stepProgress;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(x, stepTopY, stepW - 8, 2);
+
+    // Value label on top of step
+    if (stepProgress > 0.5) {
+      ctx.globalAlpha = clamp((stepProgress - 0.5) * 2, 0, 1);
+      ctx.fillStyle = c.ink;
+      ctx.font = '700 20px Inter, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      var prefix = d.prefix || '';
+      var unit = d.unit ? ' ' + d.unit : '';
+      ctx.fillText(prefix + steps[i].value + unit, x + (stepW-8)/2, stepTopY - 8);
+    }
+
+    // Period label below baseline
+    ctx.globalAlpha = stepProgress;
+    ctx.fillStyle = c.inkDim;
+    ctx.font = '500 12px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText((steps[i].label || '').toUpperCase(), x + (stepW-8)/2, baseY + 16);
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawSummitClimbScene(ctx, scene, p, c) {
+  drawBackground(ctx, c);
+  var d = scene.data || {};
+  var points = d.points || [];
+  if (points.length < 2) return;
+
+  // Title
+  ctx.fillStyle = c.ink;
+  ctx.font = '600 38px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText(d.title || '', 120, 130);
+
+  // Mountain silhouette as background
+  var mountainY = H * 0.35;
+  ctx.fillStyle = '#1f1f28';
+  ctx.beginPath();
+  ctx.moveTo(0, H);
+  ctx.lineTo(0, H * 0.7);
+  ctx.lineTo(W * 0.25, H * 0.55);
+  ctx.lineTo(W * 0.5, mountainY);
+  ctx.lineTo(W * 0.75, H * 0.5);
+  ctx.lineTo(W, H * 0.6);
+  ctx.lineTo(W, H);
+  ctx.closePath();
+  ctx.fill();
+
+  // Climbing path - animates drawing
+  var pathProgress = easeOutCubic(clamp(p * 1.3, 0, 1));
+  var baseY = H - 180;
+  var leftX = 150, rightX = W - 150;
+  var maxVal = 0;
+  for (var m = 0; m < points.length; m++) if (points[m].value > maxVal) maxVal = points[m].value;
+
+  // Compute each point position
+  var coords = [];
+  for (var i = 0; i < points.length; i++) {
+    var x = leftX + (i / (points.length - 1)) * (rightX - leftX);
+    var y = baseY - (points[i].value / maxVal) * 300;
+    coords.push({x: x, y: y});
+  }
+
+  // Draw path up to pathProgress
+  ctx.strokeStyle = c.primary;
+  ctx.lineWidth = 4;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  var totalSegs = coords.length - 1;
+  var activeSegs = pathProgress * totalSegs;
+  for (var j = 0; j <= activeSegs; j++) {
+    var idx = Math.floor(j);
+    if (idx === 0) { ctx.moveTo(coords[0].x, coords[0].y); continue; }
+    if (idx >= coords.length) break;
+    var segPart = j - idx;
+    if (segPart === 0) {
+      ctx.lineTo(coords[idx].x, coords[idx].y);
+    } else if (idx < coords.length - 1) {
+      // Interpolate
+      var nx = coords[idx].x + (coords[idx+1].x - coords[idx].x) * segPart;
+      var ny = coords[idx].y + (coords[idx+1].y - coords[idx].y) * segPart;
+      ctx.lineTo(nx, ny);
+    }
+  }
+  // Also draw complete segments
+  var fullSegs = Math.floor(activeSegs);
+  for (var k = 1; k <= fullSegs && k < coords.length; k++) {
+    ctx.lineTo(coords[k].x, coords[k].y);
+  }
+  // Partial segment
+  if (fullSegs < totalSegs) {
+    var fracPart = activeSegs - fullSegs;
+    var curr = coords[fullSegs];
+    var next = coords[fullSegs + 1];
+    ctx.lineTo(curr.x + (next.x - curr.x) * fracPart, curr.y + (next.y - curr.y) * fracPart);
+  }
+  ctx.stroke();
+
+  // Dots at visited points
+  for (var n = 0; n <= fullSegs && n < coords.length; n++) {
+    ctx.fillStyle = c.primary;
+    ctx.beginPath();
+    ctx.arc(coords[n].x, coords[n].y, 6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Flag at peak when done
+  if (pathProgress >= 0.95) {
+    var flagAlpha = clamp((pathProgress - 0.9) * 10, 0, 1);
+    var lastPoint = coords[coords.length - 1];
+    ctx.globalAlpha = flagAlpha;
+    // Pole
+    ctx.strokeStyle = c.ink;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(lastPoint.x, lastPoint.y);
+    ctx.lineTo(lastPoint.x, lastPoint.y - 60);
+    ctx.stroke();
+    // Flag
+    ctx.fillStyle = c.primary;
+    ctx.beginPath();
+    ctx.moveTo(lastPoint.x, lastPoint.y - 60);
+    ctx.lineTo(lastPoint.x + 40, lastPoint.y - 50);
+    ctx.lineTo(lastPoint.x, lastPoint.y - 40);
+    ctx.closePath();
+    ctx.fill();
+
+    // Peak value
+    ctx.fillStyle = c.ink;
+    ctx.font = '800 32px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    var prefix = d.prefix || '';
+    var unit = d.unit ? ' ' + d.unit : '';
+    ctx.fillText(prefix + points[points.length - 1].value + unit, lastPoint.x + 60, lastPoint.y - 70);
+    ctx.globalAlpha = 1;
+  }
+
+  // Goal label at bottom
+  if (d.goal_label) {
+    ctx.fillStyle = c.inkDim;
+    ctx.font = 'italic 400 22px "Cormorant Garamond", serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText(d.goal_label, W/2, H - 60);
+  }
+}
+
+function drawBottleFillScene(ctx, scene, p, c) {
+  drawBackground(ctx, c);
+  var d = scene.data || {};
+
+  // Title
+  ctx.fillStyle = c.ink;
+  ctx.font = '600 36px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillText(d.title || '', W/2, 110);
+
+  // Container dimensions
+  var cx = W/2;
+  var top = 210, bot = H - 120;
+  var leftW = 100;
+  var left = cx - leftW, right = cx + leftW;
+  var pct = Math.min(100, Math.max(0, d.percentage || 0));
+  var fillP = easeOutCubic(clamp(p * 1.3, 0, 1));
+  var displayPct = pct * fillP;
+  var fillTop = bot - (bot - top) * (displayPct / 100);
+
+  // Container outline
+  ctx.strokeStyle = c.inkDim;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(left, top);
+  ctx.lineTo(left, bot);
+  ctx.lineTo(right, bot);
+  ctx.lineTo(right, top);
+  ctx.stroke();
+
+  // Liquid fill
+  var grad = ctx.createLinearGradient(0, fillTop, 0, bot);
+  grad.addColorStop(0, c.primary);
+  grad.addColorStop(1, c.accent);
+  ctx.fillStyle = grad;
+  ctx.fillRect(left + 2, fillTop, (right - left) - 4, bot - fillTop);
+
+  // Wavy top edge for liquid
+  if (fillP > 0.05) {
+    ctx.fillStyle = c.primary;
+    ctx.beginPath();
+    ctx.moveTo(left + 2, fillTop);
+    var waveAmp = 4, waveFreq = 0.15;
+    var waveOffset = (p * 40) % 100;
+    for (var x = 0; x <= (right - left) - 4; x += 4) {
+      var yy = fillTop + Math.sin((x + waveOffset) * waveFreq) * waveAmp;
+      ctx.lineTo(left + 2 + x, yy);
+    }
+    ctx.lineTo(right - 2, fillTop + waveAmp);
+    ctx.lineTo(right - 2, fillTop);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // Percentage text inside
+  ctx.fillStyle = c.ink;
+  ctx.font = '900 72px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(displayPct.toFixed(0) + '%', cx, top + (bot - top) / 2);
+
+  // Label to the right
+  ctx.fillStyle = c.inkDim;
+  ctx.font = '500 18px Inter, sans-serif';
+  ctx.textBaseline = 'middle';
+  ctx.textAlign = 'left';
+  ctx.fillText((d.label || '').toUpperCase(), right + 30, top + (bot - top) / 2);
+
+  // Target marker if provided
+  if (d.target_pct != null) {
+    var targetY = bot - (bot - top) * (d.target_pct / 100);
+    ctx.strokeStyle = c.inkFaint;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([6, 4]);
+    ctx.beginPath();
+    ctx.moveTo(left - 40, targetY);
+    ctx.lineTo(right + 40, targetY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = c.inkFaint;
+    ctx.font = '500 11px Inter, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText('TARGET ' + d.target_pct + '%', left - 50, targetY + 4);
+  }
+}
+
+function drawOrbitSatellitesScene(ctx, scene, p, c) {
+  drawBackground(ctx, c);
+  var d = scene.data || {};
+  var items = d.items || [];
+
+  // Title
+  ctx.fillStyle = c.ink;
+  ctx.font = '600 38px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText(d.title || '', 120, 130);
+
+  var cx = W/2, cy = H/2 + 30;
+  var orbitProgress = easeOutCubic(clamp(p * 1.5, 0, 1));
+
+  // Central node
+  var centerSize = 60 * orbitProgress;
+  ctx.fillStyle = c.primary;
+  ctx.beginPath();
+  ctx.arc(cx, cy, centerSize, 0, Math.PI * 2);
+  ctx.fill();
+  if (orbitProgress > 0.5) {
+    ctx.fillStyle = c.bg;
+    ctx.font = '700 14px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText((d.center_label || 'TOTAL').toUpperCase(), cx, cy);
+  }
+
+  // Orbit ring
+  if (orbitProgress > 0.3) {
+    ctx.strokeStyle = c.inkFaint;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.arc(cx, cy, 210, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // Satellites
+  var maxVal = 0;
+  for (var m = 0; m < items.length; m++) if (items[m].value > maxVal) maxVal = items[m].value;
+
+  for (var i = 0; i < items.length; i++) {
+    var satProgress = clamp((p - 0.2 - i * 0.1) * 2, 0, 1);
+    satProgress = easeOutCubic(satProgress);
+    if (satProgress <= 0) continue;
+
+    var angle = (i / items.length) * Math.PI * 2 - Math.PI/2;
+    // Subtle slow rotation once fully landed
+    if (satProgress >= 1) angle += (p * 0.3);
+    var sx = cx + Math.cos(angle) * 210;
+    var sy = cy + Math.sin(angle) * 210;
+
+    // Satellite size scales with value
+    var satSize = 15 + (items[i].value / maxVal) * 35;
+
+    ctx.globalAlpha = satProgress;
+    ctx.fillStyle = c.accent;
+    ctx.beginPath();
+    ctx.arc(sx, sy, satSize * satProgress, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Label outside the dot
+    var labelX = cx + Math.cos(angle) * (210 + satSize + 18);
+    var labelY = cy + Math.sin(angle) * (210 + satSize + 18);
+    ctx.fillStyle = c.ink;
+    ctx.font = '600 14px Inter, sans-serif';
+    ctx.textAlign = Math.cos(angle) < -0.2 ? 'right' : (Math.cos(angle) > 0.2 ? 'left' : 'center');
+    ctx.textBaseline = 'middle';
+    ctx.fillText((items[i].label || '').toUpperCase(), labelX, labelY - 8);
+
+    // Value under label
+    ctx.fillStyle = c.primary;
+    ctx.font = '700 16px Inter, sans-serif';
+    var prefix = d.prefix || '';
+    var unit = d.unit ? ' ' + d.unit : '';
+    ctx.fillText(prefix + items[i].value + unit, labelX, labelY + 10);
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawRunwayTakeoffScene(ctx, scene, p, c) {
+  drawBackground(ctx, c);
+  var d = scene.data || {};
+
+  // Title
+  ctx.fillStyle = c.ink;
+  ctx.font = '600 38px Inter, sans-serif';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+  ctx.fillText(d.title || '', 120, 130);
+
+  var runwayY = H - 180;
+  var startX = 140;
+  var endX = W - 140;
+
+  // Runway horizon
+  ctx.strokeStyle = c.inkDim;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(startX, runwayY);
+  ctx.lineTo(endX, runwayY);
+  ctx.stroke();
+
+  // Runway stripes for perspective
+  for (var s = 0; s < 10; s++) {
+    var sx = startX + s * ((endX - startX) / 10);
+    ctx.strokeStyle = c.inkFaint;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(sx, runwayY);
+    ctx.lineTo(sx + 14, runwayY);
+    ctx.stroke();
+  }
+
+  // Trajectory curve - flat then rising like a takeoff
+  var progress = easeOutCubic(clamp(p * 1.5, 0, 1));
+
+  ctx.strokeStyle = c.primary;
+  ctx.lineWidth = 4;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(startX, runwayY);
+
+  var liftoffX = startX + (endX - startX) * 0.35; // point where it takes off
+  var currentX = startX + (endX - startX) * progress;
+
+  if (currentX < liftoffX) {
+    // Still on the runway
+    ctx.lineTo(currentX, runwayY);
+  } else {
+    ctx.lineTo(liftoffX, runwayY);
+    // Exponential rise after liftoff
+    var stepsPast = 30;
+    for (var i = 1; i <= stepsPast; i++) {
+      var t = i / stepsPast;
+      var tx = liftoffX + (currentX - liftoffX) * t;
+      if (tx > currentX) break;
+      // Exponential rise
+      var dy = Math.pow((tx - liftoffX) / (endX - liftoffX), 1.6) * 300;
+      ctx.lineTo(tx, runwayY - dy);
+    }
+  }
+  ctx.stroke();
+
+  // Plane icon at the tip
+  var planeY = runwayY;
+  if (currentX > liftoffX) {
+    planeY = runwayY - Math.pow((currentX - liftoffX) / (endX - liftoffX), 1.6) * 300;
+  }
+  ctx.fillStyle = c.primary;
+  ctx.beginPath();
+  ctx.arc(currentX, planeY, 12, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Headline value revealed after takeoff
+  if (progress > 0.55 && d.headline_value) {
+    var revealA = clamp((progress - 0.5) * 2, 0, 1);
+    ctx.globalAlpha = revealA;
+    ctx.fillStyle = c.ink;
+    ctx.font = '900 90px Inter, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    var prefix = d.prefix || '';
+    var unit = d.unit ? ' ' + d.unit : '';
+    ctx.fillText(prefix + d.headline_value + unit, W/2, runwayY - 260);
+
+    if (d.headline_label) {
+      ctx.fillStyle = c.primary;
+      ctx.font = '500 18px Inter, sans-serif';
+      drawTrackedText(ctx, d.headline_label.toUpperCase(), W/2, runwayY - 190, 3);
+    }
+    ctx.globalAlpha = 1;
+  }
+}
+
+function drawSplitBeforeAfterScene(ctx, scene, p, c) {
+  drawBackground(ctx, c);
+  var d = scene.data || {};
+
+  // Title at top
+  ctx.fillStyle = c.ink;
+  ctx.font = '600 36px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillText(d.title || '', W/2, 110);
+
+  // Animated wipe - reveal right half
+  var wipe = easeOutCubic(clamp(p * 1.3, 0, 1));
+
+  // Left half - BEFORE (dim)
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, 200, W/2, H - 300);
+  ctx.clip();
+  ctx.fillStyle = '#0f0f15';
+  ctx.fillRect(0, 200, W/2, H - 300);
+  ctx.fillStyle = c.inkFaint;
+  ctx.font = '500 14px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText((d.before_label || 'BEFORE').toUpperCase(), W/4, 260);
+  ctx.fillStyle = c.inkDim;
+  ctx.font = '800 140px Inter, sans-serif';
+  ctx.fillText((d.before_value || '') + (d.unit || ''), W/4, H/2);
+  if (d.before_sub) {
+    ctx.fillStyle = c.inkFaint;
+    ctx.font = '500 18px Inter, sans-serif';
+    ctx.fillText(d.before_sub, W/4, H/2 + 100);
+  }
+  ctx.restore();
+
+  // Divider
+  ctx.strokeStyle = c.primary;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(W/2, 200);
+  ctx.lineTo(W/2, H - 100);
+  ctx.stroke();
+
+  // Right half - AFTER (bright), wipes in
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(W/2, 200, W/2 * wipe, H - 300);
+  ctx.clip();
+  var grad = ctx.createLinearGradient(W/2, 200, W, H - 100);
+  grad.addColorStop(0, 'rgba(212,164,76,0.18)');
+  grad.addColorStop(1, 'rgba(212,164,76,0.03)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(W/2, 200, W/2, H - 300);
+
+  ctx.fillStyle = c.primary;
+  ctx.font = '500 14px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText((d.after_label || 'AFTER').toUpperCase(), 3*W/4, 260);
+  ctx.fillStyle = c.ink;
+  ctx.font = '900 160px Inter, sans-serif';
+  ctx.fillText((d.after_value || '') + (d.unit || ''), 3*W/4, H/2);
+  if (d.after_sub) {
+    ctx.fillStyle = c.primary;
+    ctx.font = '500 18px Inter, sans-serif';
+    ctx.fillText(d.after_sub, 3*W/4, H/2 + 100);
+  }
+  ctx.restore();
+
+  // Delta callout at bottom (appears after wipe)
+  if (wipe > 0.7 && d.delta_text) {
+    ctx.globalAlpha = clamp((wipe - 0.7) * 3, 0, 1);
+    ctx.fillStyle = c.primary;
+    ctx.font = 'italic 400 28px "Cormorant Garamond", serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText(d.delta_text, W/2, H - 80);
+    ctx.globalAlpha = 1;
+  }
+}
+
+function wrapText(ctx, text, cx, cy, maxWidth, lineHeight) {
+  var words = (text || '').split(' ');
+  var lines = [];
+  var line = '';
+  for (var i = 0; i < words.length; i++) {
+    var test = line ? line + ' ' + words[i] : words[i];
+    if (ctx.measureText(test).width > maxWidth && line) { lines.push(line); line = words[i]; }
+    else line = test;
+  }
+  if (line) lines.push(line);
+  var totalH = lines.length * lineHeight;
+  var startY = cy - totalH/2 + lineHeight/2;
+  for (var j = 0; j < lines.length; j++) ctx.fillText(lines[j], cx, startY + j * lineHeight);
+}
+
+function drawTrackedText(ctx, text, cx, cy, spacing) {
+  var totalW = 0;
+  for (var i = 0; i < text.length; i++) totalW += ctx.measureText(text[i]).width + spacing;
+  totalW -= spacing;
+  var x = cx - totalW/2;
+  ctx.textAlign = 'left';
+  for (var j = 0; j < text.length; j++) {
+    ctx.fillText(text[j], x, cy);
+    x += ctx.measureText(text[j]).width + spacing;
+  }
+  ctx.textAlign = 'center';
+}
+
+function playScene(scene) {
+  var canvas = $('scene-canvas');
+  var ctx = canvas.getContext('2d');
+  var duration = (scene.duration || 5) * 1000;
+  var startTime = performance.now();
+  var colors = getColors();
+
+  function renderFrame() {
+    var elapsed = performance.now() - startTime;
+    var p = Math.min(1, elapsed / duration);
+    ctx.clearRect(0, 0, W, H);
+
+    switch(scene.type) {
+      case 'title': drawTitleScene(ctx, scene, p, colors); break;
+      case 'headline_number': drawHeadlineNumberScene(ctx, scene, p, colors); break;
+      case 'bar_chart': drawBarChartScene(ctx, scene, p, colors); break;
+      case 'donut': drawDonutScene(ctx, scene, p, colors); break;
+      case 'comparison': drawComparisonScene(ctx, scene, p, colors); break;
+      case 'timeline': drawTimelineScene(ctx, scene, p, colors); break;
+      case 'callout': drawCalloutScene(ctx, scene, p, colors); break;
+      case 'closing': drawClosingScene(ctx, scene, p, colors); break;
+      case 'ascending_stairs': drawAscendingStairsScene(ctx, scene, p, colors); break;
+      case 'summit_climb': drawSummitClimbScene(ctx, scene, p, colors); break;
+      case 'bottle_fill': drawBottleFillScene(ctx, scene, p, colors); break;
+      case 'orbit_satellites': drawOrbitSatellitesScene(ctx, scene, p, colors); break;
+      case 'runway_takeoff': drawRunwayTakeoffScene(ctx, scene, p, colors); break;
+      case 'split_before_after': drawSplitBeforeAfterScene(ctx, scene, p, colors); break;
+      default:
+        drawBackground(ctx, colors);
+        ctx.fillStyle = colors.ink;
+        ctx.font = '600 24px Inter';
+        ctx.textAlign = 'center';
+        ctx.fillText('Unknown scene type: ' + scene.type, W/2, H/2);
+    }
+    if (p < 1) STATE.animationId = requestAnimationFrame(renderFrame);
+  }
+  renderFrame();
+}
+
+bootstrap();
+</script>
+</body>
+</html>
