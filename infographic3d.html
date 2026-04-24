@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a0a0c">
+<title>Reel 3D - Cinematic Data Stories</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<style>
+:root { --bg: #0a0a0c; --bg-2: #13131a; --bg-3: #1c1c26; --ink: #ede9e0; --ink-dim: #8a8580; --ink-faint: #4a4742; --accent: #d4a44c; --accent-hot: #e8b85a; --blue: #3b82f6; --green: #10b981; --red: #ef4444; --line: rgba(237,233,224,0.08); --line-strong: rgba(237,233,224,0.16); }
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { background: var(--bg); color: var(--ink); font-family: 'Inter', system-ui, sans-serif; font-size: 14px; line-height: 1.55; min-height: 100vh; }
+h1, h2, h3 { font-family: 'Cormorant Garamond', serif; font-weight: 400; letter-spacing: -0.01em; line-height: 1.1; }
+.mono-label { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-dim); font-weight: 600; }
+.mono-label.accent { color: var(--accent); }
+.hidden { display: none !important; }
+
+#loading-screen { position: fixed; inset: 0; background: var(--bg); display: grid; place-items: center; z-index: 9999; }
+.spinner { width: 32px; height: 32px; border: 2px solid #2a2a35; border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--ink-faint); text-align: center; }
+
+#auth-screen { min-height: 100vh; display: grid; grid-template-columns: 1fr 460px; }
+@media (max-width: 900px) { #auth-screen { grid-template-columns: 1fr; } .auth-left { display: none; } .auth-card { border-left: none !important; padding: 48px 24px !important; } }
+.auth-left { background: #0f0f14; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 60px; position: relative; overflow: hidden; border-right: 1px solid var(--line); }
+.auth-left::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 70% 50% at 30% 40%, rgba(212,164,76,.12) 0%, transparent 70%), radial-gradient(ellipse 50% 40% at 75% 70%, rgba(59,130,246,.08) 0%, transparent 60%); pointer-events: none; }
+.auth-brand-big { font-family: 'Cormorant Garamond', serif; font-size: clamp(80px, 12vw, 160px); font-weight: 300; font-style: italic; color: var(--accent); line-height: 1; letter-spacing: -.02em; text-shadow: 0 0 80px rgba(212,164,76,.25); margin-bottom: 18px; display: block; }
+.auth-tagline { font-size: 11px; letter-spacing: 0.28em; text-transform: uppercase; color: #3a3a48; }
+.auth-card { background: var(--bg); display: flex; flex-direction: column; justify-content: center; padding: 60px 48px; min-height: 100vh; border-left: 1px solid var(--line); }
+.auth-card h1 { font-size: 40px; color: var(--ink); margin-bottom: 6px; }
+.auth-card h1 em { color: var(--accent); font-style: italic; }
+.auth-card > .mono-label { margin-bottom: 8px; }
+.auth-card > .muted { margin-bottom: 32px; font-size: 13px; line-height: 1.7; color: var(--ink-dim); }
+
+.field { margin-bottom: 20px; }
+.field label { display: block; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-dim); font-weight: 600; margin-bottom: 8px; }
+.field label .req { color: var(--red); margin-left: 3px; }
+.field input[type="text"], .field input[type="password"], .field textarea, .field select { width: 100%; background: var(--bg-2); border: 1px solid var(--line-strong); color: var(--ink); padding: 12px 14px; font: inherit; font-family: 'Inter', sans-serif; font-size: 13px; transition: border-color 0.2s; border-radius: 6px; }
+.field textarea { min-height: 110px; resize: vertical; line-height: 1.7; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+.field input:focus, .field textarea:focus, .field select:focus { outline: none; border-color: var(--accent); }
+.field .hint { margin-top: 6px; font-size: 11px; color: var(--ink-faint); line-height: 1.5; }
+
+input:-webkit-autofill { -webkit-box-shadow: 0 0 0 1000px var(--bg-2) inset !important; -webkit-text-fill-color: var(--ink) !important; transition: background-color 86400s ease 0s !important; }
+.error-text { color: var(--red); margin-top: 12px; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; min-height: 14px; }
+
+.btn { display: inline-flex; align-items: center; gap: 10px; background: var(--ink); color: var(--bg); border: none; padding: 12px 22px; font: inherit; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; cursor: pointer; font-weight: 700; border-radius: 6px; transition: all 0.2s; }
+.btn:hover { background: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--bg); }
+.btn.primary:hover { background: var(--accent-hot); }
+.btn.ghost { background: transparent; border: 1px solid var(--line-strong); color: var(--ink); }
+.btn.ghost:hover { border-color: var(--accent); color: var(--accent); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn.wide-btn { width: 100%; justify-content: center; padding: 14px; font-size: 12px; }
+.btn.tiny { padding: 6px 12px; font-size: 10px; }
+.btn .loader { display: inline-block; width: 12px; height: 12px; border: 1.5px solid currentColor; border-top-color: transparent; border-radius: 50%; animation: spin 0.7s linear infinite; }
+
+.topbar { display: flex; align-items: center; justify-content: space-between; padding: 18px 24px; border-bottom: 1px solid var(--line); background: var(--bg); position: sticky; top: 0; z-index: 50; backdrop-filter: blur(12px); }
+.brand { font-family: 'Cormorant Garamond', serif; font-size: 24px; font-style: italic; color: var(--accent); letter-spacing: -0.02em; }
+.brand-sub { font-size: 9px; letter-spacing: 0.25em; text-transform: uppercase; color: var(--ink-faint); margin-left: 14px; font-weight: 600; }
+.top-right { display: flex; align-items: center; gap: 12px; }
+.chip { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-dim); display: flex; align-items: center; gap: 6px; }
+.chip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ink-faint); }
+.chip.live .dot { background: var(--green); box-shadow: 0 0 8px var(--green); }
+
+main { max-width: 1400px; margin: 0 auto; padding: 32px 24px 80px; display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+@media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+
+.input-panel h2, .preview-panel h2 { font-size: 32px; margin-bottom: 6px; font-style: italic; }
+.input-panel > p, .preview-panel > p { color: var(--ink-dim); font-size: 13px; margin-bottom: 28px; line-height: 1.7; }
+
+.file-drop { border: 2px dashed var(--line-strong); border-radius: 8px; padding: 28px; text-align: center; cursor: pointer; transition: all 0.2s; background: var(--bg-2); }
+.file-drop:hover { border-color: var(--accent); }
+.file-drop.has-file { border-style: solid; background: var(--bg-3); }
+.file-drop input { display: none; }
+.file-drop .icon { font-family: 'Cormorant Garamond', serif; font-size: 36px; font-weight: 300; color: var(--ink-faint); display: block; margin-bottom: 6px; }
+.file-drop.has-file .icon { color: var(--accent); }
+.file-drop span { font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--ink-dim); }
+.file-drop .filename { color: var(--accent); font-weight: 600; }
+
+.data-preview { margin-top: 12px; background: var(--bg-2); border: 1px solid var(--line); border-radius: 6px; padding: 12px; max-height: 200px; overflow: auto; }
+.data-preview table { border-collapse: collapse; font-family: 'JetBrains Mono', monospace; font-size: 11px; width: 100%; }
+.data-preview th { text-align: left; padding: 6px 10px; color: var(--accent); background: var(--bg); position: sticky; top: 0; }
+.data-preview td { padding: 4px 10px; color: var(--ink-dim); border-bottom: 1px solid var(--line); }
+
+.angle-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+@media (max-width: 600px) { .angle-grid { grid-template-columns: repeat(3, 1fr); } }
+.angle-btn { background: var(--bg-2); border: 1px solid var(--line); padding: 10px 6px; border-radius: 6px; cursor: pointer; transition: all 0.2s; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.angle-btn:hover { border-color: var(--accent); }
+.angle-btn.active { border-color: var(--accent); background: var(--bg-3); }
+.angle-btn svg { width: 32px; height: 32px; stroke: var(--ink-dim); fill: none; stroke-width: 1.5; }
+.angle-btn.active svg { stroke: var(--accent); }
+.angle-btn span { font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--ink-dim); font-weight: 600; }
+.angle-btn.active span { color: var(--accent); }
+
+.preview-stage { width: 100%; aspect-ratio: 16 / 9; background: #050508; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; position: relative; }
+.preview-stage canvas { width: 100%; height: 100%; display: block; }
+.preview-empty { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 40px; color: var(--ink-dim); }
+.preview-empty .icon { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 64px; color: var(--ink-faint); margin-bottom: 10px; }
+
+.scene-controls { margin-top: 16px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.scene-controls .mono-label { flex: 1; }
+.scene-progress { margin-top: 10px; height: 3px; background: var(--bg-3); border-radius: 2px; overflow: hidden; }
+.scene-progress-bar { height: 100%; background: var(--accent); width: 0%; transition: width 0.1s linear; }
+
+.scene-nav { display: flex; gap: 4px; margin-top: 16px; overflow-x: auto; padding-bottom: 8px; }
+.scene-tile { flex-shrink: 0; width: 100px; aspect-ratio: 16/9; background: var(--bg-2); border: 1px solid var(--line); border-radius: 4px; cursor: pointer; display: flex; flex-direction: column; justify-content: space-between; padding: 6px 8px; font-size: 10px; transition: all 0.2s; }
+.scene-tile:hover { border-color: var(--line-strong); }
+.scene-tile.active { border-color: var(--accent); background: var(--bg-3); }
+.scene-tile .num { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-style: italic; color: var(--accent); }
+.scene-tile .type { color: var(--ink-dim); letter-spacing: 0.1em; text-transform: uppercase; font-size: 9px; }
+
+.section-hr { height: 1px; background: var(--line); margin: 28px 0; }
+
+.modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(4px); z-index: 100; display: none; }
+.modal-backdrop.open { display: block; }
+.settings-box { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--bg-2); border: 1px solid var(--line-strong); border-radius: 10px; max-width: 480px; width: calc(100vw - 48px); padding: 32px; z-index: 101; display: none; }
+.settings-box.open { display: block; }
+.settings-box h3 { font-size: 26px; font-style: italic; margin-bottom: 12px; }
+.settings-box p { color: var(--ink-dim); font-size: 13px; margin-bottom: 18px; line-height: 1.7; }
+.settings-box code { background: var(--bg); padding: 2px 8px; color: var(--accent); font-size: 11px; border-radius: 3px; }
+.settings-box .row-buttons { display: flex; gap: 10px; margin-top: 18px; }
+
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--ink); color: var(--bg); padding: 12px 22px; font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; font-weight: 600; z-index: 200; transition: transform 0.3s; border-radius: 6px; }
+.toast.show { transform: translateX(-50%) translateY(0); }
+.toast.error { background: var(--red); color: #fff; }
+
+#fatal-error { position: fixed; inset: 0; background: #160808; color: #ffb3b3; padding: 40px 24px; z-index: 300; overflow: auto; }
+#fatal-error h2 { font-size: 32px; color: #ff6b6b; margin-bottom: 16px; }
+#fatal-error pre { background: #000; padding: 16px; border: 1px solid #333; white-space: pre-wrap; word-break: break-word; margin: 12px 0; font-family: monospace; font-size: 12px; }
+
+.json-viewer { margin-top: 24px; background: var(--bg-2); border: 1px solid var(--line); border-radius: 6px; padding: 14px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-dim); max-height: 200px; overflow: auto; white-space: pre-wrap; word-break: break-word; }
+
+.render-status { padding: 10px 14px; background: var(--bg-3); border-radius: 6px; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-dim); margin-top: 12px; }
+.render-status.active { background: rgba(212,164,76,0.12); color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div id="loading-screen"><div><div class="spinner"></div><div class="loading-text">Connecting</div></div></div>
+
+<div id="fatal-error" class="hidden">
+  <h2>Startup Error</h2>
+  <pre id="fatal-error-msg"></pre>
+</div>
+
+<div id="auth-screen" class="hidden">
+  <div class="auth-left">
+    <div><span class="auth-brand-big">Reel 3D.</span><p class="auth-tagline">Cinematic data stories</p></div>
+  </div>
+  <div class="auth-card">
+    <h1><em>Sign in</em> to build.</h1>
+    <p class="mono-label">REEL 3D</p>
+    <p class="muted">Same account as your other Reel tools. Upload data, describe your vision, get cinematic 3D visualizations.</p>
+    <div class="field"><label>Email</label><input type="text" id="auth-email" autocomplete="email" inputmode="email"></div>
+    <div class="field"><label>Password</label><input type="password" id="auth-password" autocomplete="current-password"></div>
+    <button class="btn primary wide-btn" id="btn-signin">Sign In</button>
+    <p id="auth-error" class="error-text"></p>
+  </div>
+</div>
+
+<div id="app" class="hidden">
+  <header class="topbar">
+    <div><span class="brand">Reel 3D.</span><span class="brand-sub">CINEMATIC DATA</span></div>
+    <div class="top-right">
+      <div class="chip" id="api-chip"><div class="dot"></div><span id="api-status">...</span></div>
+      <div class="chip"><span id="user-email">-</span></div>
+      <button class="btn ghost tiny" id="btn-settings">Key</button>
+      <button class="btn ghost tiny" id="btn-signout">Out</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="input-panel">
+      <span class="mono-label accent">Step 01</span>
+      <h2>Upload <em style="color:var(--accent);">data</em>.</h2>
+      <p>Upload an Excel or CSV file. First sheet, first row is headers.</p>
+
+      <div class="field">
+        <label>Excel / CSV File</label>
+        <label class="file-drop" id="file-drop">
+          <input type="file" id="file-input" accept=".xlsx,.xls,.csv">
+          <span class="icon">+</span>
+          <span id="file-drop-label">Tap to upload .xlsx or .csv</span>
+        </label>
+      </div>
+      <div id="data-preview-wrapper" class="hidden">
+        <div class="mono-label" style="margin-bottom: 8px;">Parsed data preview</div>
+        <div class="data-preview" id="data-preview"></div>
+      </div>
+
+      <div class="section-hr"></div>
+
+      <span class="mono-label accent">Step 02</span>
+      <h2>Pick your <em style="color:var(--accent);">angles</em>.</h2>
+      <p>Select camera angles the video should cycle through. Multiple selections create cinematic movement.</p>
+
+      <div class="field">
+        <div class="angle-grid" id="angle-grid">
+          <button class="angle-btn active" data-angle="hero">
+            <svg viewBox="0 0 32 32"><rect x="8" y="18" width="5" height="8"/><rect x="14" y="13" width="5" height="13"/><rect x="20" y="20" width="5" height="6"/><circle cx="28" cy="6" r="1.5" fill="currentColor" stroke="none"/><path d="M28 6 L16 22" stroke-dasharray="2 2"/></svg>
+            <span>Hero 3/4</span>
+          </button>
+          <button class="angle-btn" data-angle="front">
+            <svg viewBox="0 0 32 32"><rect x="6" y="16" width="5" height="10"/><rect x="13" y="11" width="5" height="15"/><rect x="20" y="8" width="5" height="18"/><circle cx="16" cy="4" r="1.5" fill="currentColor" stroke="none"/><path d="M16 4 L16 16" stroke-dasharray="2 2"/></svg>
+            <span>Front</span>
+          </button>
+          <button class="angle-btn" data-angle="top">
+            <svg viewBox="0 0 32 32"><rect x="6" y="10" width="4" height="12"/><rect x="12" y="10" width="4" height="12"/><rect x="18" y="10" width="4" height="12"/><rect x="24" y="10" width="4" height="12"/><circle cx="16" cy="3" r="1.5" fill="currentColor" stroke="none"/><path d="M16 3 L16 10" stroke-dasharray="2 2"/></svg>
+            <span>Top</span>
+          </button>
+          <button class="angle-btn" data-angle="profile">
+            <svg viewBox="0 0 32 32"><rect x="10" y="14" width="4" height="12"/><rect x="15" y="10" width="4" height="16"/><rect x="20" y="16" width="4" height="10"/><circle cx="3" cy="18" r="1.5" fill="currentColor" stroke="none"/><path d="M3 18 L12 18" stroke-dasharray="2 2"/></svg>
+            <span>Profile</span>
+          </button>
+          <button class="angle-btn" data-angle="low">
+            <svg viewBox="0 0 32 32"><rect x="7" y="14" width="5" height="12"/><rect x="13" y="8" width="5" height="18"/><rect x="19" y="16" width="5" height="10"/><circle cx="5" cy="28" r="1.5" fill="currentColor" stroke="none"/><path d="M5 28 L16 20" stroke-dasharray="2 2"/></svg>
+            <span>Low</span>
+          </button>
+        </div>
+        <div class="hint">Tap to toggle. At least one angle must be selected.</div>
+      </div>
+
+      <div class="section-hr"></div>
+
+      <span class="mono-label accent">Step 03</span>
+      <h2>Describe your <em style="color:var(--accent);">vision</em>.</h2>
+      <p>Tell Claude what this data means and how you want it shown.</p>
+
+      <div class="field">
+        <label>Presentation title</label>
+        <input type="text" id="pres-title" placeholder="Q3 P&L Walkthrough">
+      </div>
+      <div class="field">
+        <label>What this data is <span class="req">*</span></label>
+        <textarea id="pres-narrative" placeholder="This is our Q3 P&L. Top line is Total Income. Then COGS, leaving Gross Profit. Then operating expenses, getting to EBIT. Then interest and taxes, landing at Net Revenue."></textarea>
+      </div>
+      <div class="field">
+        <label>Creative direction (the "how")</label>
+        <textarea id="pres-direction" placeholder="Build as a waterfall. Gross Profit and Net Revenue should glow. Start with a front view for the first cost, then hero 3/4 for the middle, end with a low angle on the final bar for impact."></textarea>
+        <div class="hint">Optional. Reference the selected angles by name.</div>
+      </div>
+
+      <div class="section-hr"></div>
+
+      <button class="btn primary wide-btn" id="btn-generate">
+        <span id="gen-btn-text">Generate 3D Movie</span>
+      </button>
+    </section>
+
+    <section class="preview-panel">
+      <span class="mono-label accent">Step 04</span>
+      <h2>Preview your <em style="color:var(--accent);">movie</em>.</h2>
+      <p>Scenes play in sequence. Drag to orbit during playback. Pinch to zoom.</p>
+
+      <div class="preview-stage" id="preview-stage">
+        <div class="preview-empty" id="preview-empty">
+          <div><div class="icon">+</div><div class="mono-label">No movie yet</div><p style="margin-top:10px;font-size:12px;">Upload data, pick angles, hit generate.</p></div>
+        </div>
+        <canvas id="three-canvas" class="hidden"></canvas>
+      </div>
+
+      <div class="scene-controls hidden" id="scene-controls">
+        <span class="mono-label" id="scene-info">Scene 1 / 1</span>
+        <button class="btn ghost tiny" id="btn-play-all">Play All</button>
+        <button class="btn ghost tiny" id="btn-replay">Replay scene</button>
+        <button class="btn ghost tiny" id="btn-reset-camera">Reset view</button>
+      </div>
+      <div class="scene-progress hidden" id="scene-progress"><div class="scene-progress-bar" id="scene-progress-bar"></div></div>
+      <div class="scene-nav hidden" id="scene-nav"></div>
+
+      <div class="render-status" id="render-status"></div>
+      <div class="json-viewer hidden" id="json-viewer"></div>
+    </section>
+  </main>
+</div>
+
+<div class="modal-backdrop" id="settings-backdrop"></div>
+<div class="settings-box" id="settings-box">
+  <h3>Anthropic API Key</h3>
+  <p>Used for storyboard generation. Get a key from <code>console.anthropic.com</code>.</p>
+  <p>Shared with your other Reel tools via your Firebase profile.</p>
+  <div class="field"><label>Anthropic API Key</label><input type="password" id="api-key-input" placeholder="sk-ant-..."></div>
+  <div class="row-buttons">
+    <button class="btn ghost wide-btn" id="btn-settings-cancel">Cancel</button>
+    <button class="btn primary wide-btn" id="btn-settings-save">Save Key</button>
+  </div>
+</div>
+
+<div class="toast" id="toast">Ready</div>
+
+<script>
+window.addEventListener('error', function(e) { showFatalError((e.message || 'Error') + '\nFile: ' + (e.filename || '?') + '\nLine: ' + (e.lineno || '?') + '\n\n' + (e.error && e.error.stack ? e.error.stack : '')); });
+window.addEventListener('unhandledrejection', function(e) { showFatalError('Promise rejected: ' + (e.reason && e.reason.message ? e.reason.message : e.reason) + '\n\n' + (e.reason && e.reason.stack ? e.reason.stack : '')); });
+function showFatalError(msg) { var el = document.getElementById('fatal-error'); var det = document.getElementById('fatal-error-msg'); if (el && det) { el.classList.remove('hidden'); det.textContent = msg; } }
+function $(id) { return document.getElementById(id); }
+function toast(msg, isError) { var el = $('toast'); el.textContent = msg; if (isError) el.classList.add('error'); else el.classList.remove('error'); el.classList.add('show'); setTimeout(function(){ el.classList.remove('show'); }, 2600); }
+function showScreen(id) { var loading = $('loading-screen'); if (loading) loading.style.display = 'none'; ['auth-screen', 'app'].forEach(function(s){ var el = $(s); if (!el) return; if (s === id) el.classList.remove('hidden'); else el.classList.add('hidden'); }); }
+
+var STATE = { user: null, apiKey: null, parsedData: null, storyboard: null, selectedAngles: ['hero'], currentSceneIdx: 0 };
+var db = null, auth = null;
+var FB_CONFIG = { apiKey: 'AIzaSyDovy8Pqg4a7Gm1ZJ7ix6F1-b90sqo-nrY', authDomain: 'reel-studio-46495.firebaseapp.com', databaseURL: 'https://reel-studio-46495-default-rtdb.asia-southeast1.firebasedatabase.app', projectId: 'reel-studio-46495', storageBucket: 'reel-studio-46495.firebasestorage.app', messagingSenderId: '1088923527470', appId: '1:1088923527470:web:6fbf1915840044a29572bf' };
+
+function initFirebase() { try { firebase.initializeApp(FB_CONFIG); auth = firebase.auth(); db = firebase.database(); return true; } catch (e) { console.error(e); return false; } }
+
+function bootstrap() {
+  if (!initFirebase()) { showFatalError('Could not connect to Firebase.'); return; }
+  auth.onAuthStateChanged(function(user) {
+    if (user) { STATE.user = user; $('user-email').textContent = user.email; loadApiKeyFromDb().then(function() { showScreen('app'); updateApiStatus(); }).catch(function() { showScreen('app'); updateApiStatus(); }); }
+    else showScreen('auth-screen');
+  });
+}
+function keyRef() { return db.ref('users/' + STATE.user.uid + '/settings/anthropic_api_key'); }
+function loadApiKeyFromDb() { return keyRef().once('value').then(function(snap) { STATE.apiKey = snap.val() || null; }); }
+function saveApiKeyToDb(key) { return keyRef().set(key).then(function() { STATE.apiKey = key; updateApiStatus(); }); }
+function updateApiStatus() { var chip = $('api-chip'), st = $('api-status'); if (STATE.apiKey) { chip.classList.add('live'); st.textContent = 'KEY SET'; } else { chip.classList.remove('live'); st.textContent = 'NO KEY'; } }
+
+function handleSignIn() {
+  var email = $('auth-email').value.trim(), pw = $('auth-password').value, err = $('auth-error');
+  err.textContent = '';
+  if (!email || !pw) { err.textContent = 'Email and password required.'; return; }
+  var btn = $('btn-signin'); btn.disabled = true; btn.innerHTML = '<span class="loader"></span> Signing in';
+  auth.signInWithEmailAndPassword(email, pw).catch(function(e) {
+    var c = e.code || '';
+    if (c === 'auth/user-not-found' || c === 'auth/invalid-login-credentials' || c === 'auth/invalid-credential') {
+      auth.createUserWithEmailAndPassword(email, pw).catch(function(e2) { err.textContent = e2.message; btn.disabled = false; btn.innerHTML = 'Sign In'; });
+    } else { err.textContent = e.message; btn.disabled = false; btn.innerHTML = 'Sign In'; }
+  });
+}
+$('btn-signin').onclick = handleSignIn;
+$('auth-password').addEventListener('keypress', function(e) { if (e.key === 'Enter') handleSignIn(); });
+$('btn-signout').onclick = function() { auth.signOut(); };
+function openSettings() { $('api-key-input').value = STATE.apiKey || ''; $('settings-backdrop').classList.add('open'); $('settings-box').classList.add('open'); }
+function closeSettings() { $('settings-backdrop').classList.remove('open'); $('settings-box').classList.remove('open'); }
+$('btn-settings').onclick = openSettings;
+$('btn-settings-cancel').onclick = closeSettings;
+$('settings-backdrop').onclick = closeSettings;
+$('btn-settings-save').onclick = function() {
+  var key = $('api-key-input').value.trim();
+  if (key && !key.startsWith('sk-ant-')) { toast('Key must start with sk-ant-', true); return; }
+  var btn = $('btn-settings-save'); btn.disabled = true; btn.innerHTML = '<span class="loader"></span> Saving';
+  saveApiKeyToDb(key || null).then(function() { closeSettings(); toast(key ? 'Key saved' : 'Key cleared'); })
+    .catch(function(e) { toast('Save failed: ' + e.message, true); })
+    .finally(function() { btn.disabled = false; btn.textContent = 'Save Key'; });
+};
+
+/* ============ ANGLE SELECTION ============ */
+document.querySelectorAll('.angle-btn').forEach(function(btn) {
+  btn.onclick = function() {
+    var angle = btn.getAttribute('data-angle');
+    var idx = STATE.selectedAngles.indexOf(angle);
+    if (idx >= 0) {
+      if (STATE.selectedAngles.length > 1) { STATE.selectedAngles.splice(idx, 1); btn.classList.remove('active'); }
+      else toast('At least one angle required', true);
+    } else { STATE.selectedAngles.push(angle); btn.classList.add('active'); }
+  };
+});
+
+/* ============ FILE UPLOAD / PARSING ============ */
+$('file-input').onchange = function(e) {
+  var f = e.target.files[0]; if (!f) return;
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      var data = new Uint8Array(ev.target.result);
+      var workbook = XLSX.read(data, { type: 'array' });
+      var firstSheet = workbook.SheetNames[0];
+      var sheet = workbook.Sheets[firstSheet];
+      var rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+      if (!rows || rows.length === 0) { toast('File is empty', true); return; }
+      var headers = rows[0].map(function(h) { return String(h).trim() || 'Col'; });
+      var body = rows.slice(1).filter(function(r) { return r.some(function(c) { return c !== '' && c != null; }); });
+      STATE.parsedData = { headers: headers, rows: body, sheet_name: firstSheet };
+      $('file-drop').classList.add('has-file');
+      $('file-drop-label').innerHTML = '<span class="filename">' + f.name + '</span><br>' + body.length + ' rows';
+      var html = '<table><thead><tr>';
+      for (var h = 0; h < headers.length; h++) html += '<th>' + escapeHtml(headers[h]) + '</th>';
+      html += '</tr></thead><tbody>';
+      var preview = body.slice(0, 20);
+      for (var r = 0; r < preview.length; r++) {
+        html += '<tr>';
+        for (var c = 0; c < headers.length; c++) html += '<td>' + escapeHtml(preview[r][c] != null ? preview[r][c] : '') + '</td>';
+        html += '</tr>';
+      }
+      html += '</tbody></table>';
+      if (body.length > 20) html += '<div style="color:var(--ink-faint);font-size:10px;padding:6px;">(' + (body.length - 20) + ' more rows not shown)</div>';
+      $('data-preview').innerHTML = html;
+      $('data-preview-wrapper').classList.remove('hidden');
+      toast('Loaded ' + body.length + ' rows');
+    } catch (err) { console.error(err); toast('Could not parse file: ' + err.message, true); }
+  };
+  reader.readAsArrayBuffer(f);
+};
+function escapeHtml(s) { return String(s == null ? '' : s).split('&').join('&amp;').split('<').join('&lt;').split('>').join('&gt;').split('"').join('&quot;').split("'").join('&#39;'); }
+
+/* ============ STORYBOARD PROMPT ============ */
+var STORYBOARD_SYSTEM_PROMPT = [
+  'You are a 3D cinematic data visualization director.',
+  'You turn numeric data into structured scene plans that a Three.js renderer executes.',
+  '',
+  'CRITICAL OUTPUT FORMAT:',
+  '- Your entire response must be a single JSON array of scene objects.',
+  '- Start with [ and end with ].',
+  '- No prose, no markdown fences, no wrapping object.',
+  '',
+  'AVAILABLE 3D SCENE TYPES:',
+  '',
+  'title_3d: Opening title card in 3D space. data: {title, subtitle, company}',
+  '',
+  'waterfall_3d: A P&L or bridge waterfall in 3D. Stacked bars showing flow from starting value to ending value.',
+  '  data: {',
+  '    title: string, subtitle: string (optional),',
+  '    steps: [{',
+  '      label: string (max 24 chars),',
+  '      value: number (positive for additions/totals; negative allowed for subtracts but "kind" is what matters),',
+  '      kind: "start"|"add"|"subtract"|"total"|"end",',
+  '      highlight: boolean (optional) - glows the bar',
+  '    }],',
+  '    unit: string, prefix: string',
+  '  }',
+  '',
+  'headline_3d: One huge extruded number with label and delta. data: {value, label, delta_pct, delta_direction: "up"|"down"|"flat", unit, prefix}',
+  '',
+  'closing_3d: End card. data: {company, tagline}',
+  '',
+  'CAMERA ANGLES AVAILABLE (selected by user):',
+  '- "hero": classic 3/4 angle, slightly elevated (default cinematic)',
+  '- "front": straight-on frontal view',
+  '- "top": overhead, looking down',
+  '- "profile": pure side view',
+  '- "low": low angle looking up (dramatic)',
+  '',
+  'EACH SCENE MUST INCLUDE:',
+  '- "camera_angle": one of the above angle strings',
+  '- OR "camera_sequence": array of angles to cycle through within the scene, e.g. ["front","hero","low"]',
+  '- Use ONLY angles from the user\'s selected_angles list.',
+  '- For longer scenes (8s+), prefer camera_sequence for cinematic movement.',
+  '- For title/closing, use single camera_angle.',
+  '',
+  'RULES:',
+  '- Always open with title_3d, always close with closing_3d.',
+  '- If data looks like a P&L (total income minus costs equals profit), USE waterfall_3d.',
+  '- Follow the user creative_direction faithfully.',
+  '- Scenes 5-10 seconds each. Total 3-5 scenes.',
+  '- Use actual numbers; never invent figures.',
+  '- Labels in waterfall must be SHORT (max 24 chars).',
+  '- Set "kind": "start" for opening total (income), "subtract" for costs, "total" for intermediate subtotals (gross profit, EBIT), "end" for final (net profit/revenue).',
+  '',
+  'EXAMPLE:',
+  '[{"type":"title_3d","duration":5,"camera_angle":"front","data":{"title":"Q3 P&L","subtitle":"How Income becomes Profit","company":"Acme"}},{"type":"waterfall_3d","duration":12,"camera_sequence":["front","hero","low"],"data":{"title":"P&L Flow","steps":[{"label":"Total Income","value":4444,"kind":"start"},{"label":"COGS","value":-723,"kind":"subtract"},{"label":"Gross Profit","value":3721,"kind":"total","highlight":true},{"label":"Expenses","value":-1434,"kind":"subtract"},{"label":"EBIT","value":2287,"kind":"total"},{"label":"Interest","value":-415,"kind":"subtract"},{"label":"PBT","value":1872,"kind":"total"},{"label":"Taxes","value":-310,"kind":"subtract"},{"label":"Net Revenue","value":1562,"kind":"end","highlight":true}],"unit":"Cr","prefix":"Rs "}},{"type":"closing_3d","duration":4,"camera_angle":"hero","data":{"company":"Acme","tagline":"Thank you"}}]'
+].join('\n');
+
+async function generateStoryboard() {
+  if (!STATE.apiKey) { toast('Set your Anthropic API key first', true); openSettings(); return; }
+  var narrative = $('pres-narrative').value.trim();
+  if (!narrative && !STATE.parsedData) { toast('Provide data or narrative', true); return; }
+
+  var userContent = [
+    'Title: ' + ($('pres-title').value.trim() || 'Untitled'),
+    'Selected camera angles (use ONLY these): ' + STATE.selectedAngles.join(', '),
+    '',
+    'Narrative (what the data is):',
+    narrative || '(none)',
+    ''
+  ];
+  var direction = $('pres-direction').value.trim();
+  if (direction) { userContent.push('Creative direction:'); userContent.push(direction); userContent.push(''); }
+  if (STATE.parsedData) {
+    userContent.push('Uploaded data (first ' + Math.min(50, STATE.parsedData.rows.length) + ' of ' + STATE.parsedData.rows.length + ' rows):');
+    userContent.push('Headers: ' + JSON.stringify(STATE.parsedData.headers));
+    userContent.push('Rows: ' + JSON.stringify(STATE.parsedData.rows.slice(0, 50)));
+    userContent.push('');
+  }
+  userContent.push('Generate the JSON storyboard now.');
+
+  var btn = $('btn-generate'), btnText = $('gen-btn-text');
+  btn.disabled = true; btnText.innerHTML = '<span class="loader"></span> Generating';
+  $('render-status').className = 'render-status active'; $('render-status').textContent = 'Calling Claude...';
+
+  try {
+    var response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': STATE.apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 3000, system: STORYBOARD_SYSTEM_PROMPT, messages: [{ role: 'user', content: userContent.join('\n') }] })
+    });
+    if (!response.ok) { var errText = await response.text(); throw new Error('API error ' + response.status + ': ' + errText); }
+    var data = await response.json();
+    var content = data.content && data.content[0] && data.content[0].text;
+    if (!content) throw new Error('Empty response');
+    content = content.replace(/^```json\s*/i, '').replace(/^```\s*/, '').replace(/\s*```$/, '').trim();
+
+    var storyboard;
+    try { storyboard = JSON.parse(content); } catch (e) { throw new Error('Could not parse JSON:\n' + content.substring(0, 800)); }
+    if (!Array.isArray(storyboard)) {
+      var found = null;
+      if (storyboard.scenes && Array.isArray(storyboard.scenes)) found = storyboard.scenes;
+      else { for (var k in storyboard) { if (Array.isArray(storyboard[k]) && storyboard[k].length > 0 && storyboard[k][0] && storyboard[k][0].type) { found = storyboard[k]; break; } } }
+      if (found) storyboard = found; else throw new Error('Expected array. Got: ' + Object.keys(storyboard).join(', '));
+    }
+    if (storyboard.length === 0) throw new Error('Empty storyboard');
+
+    STATE.storyboard = storyboard;
+    STATE.currentSceneIdx = 0;
+    $('json-viewer').textContent = JSON.stringify(storyboard, null, 2);
+    $('json-viewer').classList.remove('hidden');
+
+    // Build scene nav
+    renderSceneNav();
+    toast('Storyboard ready: ' + storyboard.length + ' scenes');
+    $('render-status').textContent = 'Initialising 3D engine...';
+    await initThreeEngine();
+    $('render-status').textContent = 'Playing scene 1 of ' + storyboard.length;
+    await playScene(0);
+    $('render-status').className = 'render-status'; $('render-status').textContent = 'Ready. Use Play All for the full movie.';
+  } catch (err) {
+    console.error(err);
+    toast('Generation failed', true);
+    $('render-status').className = 'render-status'; $('render-status').textContent = '';
+    showFatalError('Generation failed:\n\n' + err.message);
+  } finally {
+    btn.disabled = false; btnText.textContent = 'Generate 3D Movie';
+  }
+}
+$('btn-generate').onclick = generateStoryboard;
+
+function renderSceneNav() {
+  var sb = STATE.storyboard; if (!sb) return;
+  var nav = $('scene-nav'); nav.innerHTML = '';
+  for (var i = 0; i < sb.length; i++) {
+    var tile = document.createElement('div');
+    tile.className = 'scene-tile' + (i === STATE.currentSceneIdx ? ' active' : '');
+    tile.setAttribute('data-idx', i);
+    tile.innerHTML = '<div class="num">' + (i+1) + '</div><div class="type">' + (sb[i].type || '?') + ' - ' + (sb[i].duration || 0) + 's</div>';
+    tile.onclick = (function(idx){ return function(){ playScene(idx); }; })(i);
+    nav.appendChild(tile);
+  }
+  $('scene-nav').classList.remove('hidden');
+  $('scene-controls').classList.remove('hidden');
+  $('scene-progress').classList.remove('hidden');
+}
+
+$('btn-replay').onclick = function() { playScene(STATE.currentSceneIdx); };
+$('btn-reset-camera').onclick = function() { if (threeEngine.resetCamera) threeEngine.resetCamera(); };
+$('btn-play-all').onclick = async function() {
+  if (!STATE.storyboard) return;
+  var btn = $('btn-play-all'); btn.disabled = true; btn.textContent = 'Playing...';
+  try {
+    for (var i = 0; i < STATE.storyboard.length; i++) {
+      $('render-status').textContent = 'Playing scene ' + (i+1) + ' of ' + STATE.storyboard.length;
+      await playScene(i, true);
+    }
+    $('render-status').textContent = 'Full movie played. Drag canvas to explore last scene.';
+  } finally { btn.disabled = false; btn.textContent = 'Play All'; }
+};
+
+/* ============ THREE.JS ENGINE ============ */
+var threeEngine = {
+  THREE: null, scene: null, camera: null, renderer: null, controls: null, animationId: null,
+  resetCamera: null, currentSceneElements: null, currentStart: 0, currentDuration: 0
+};
+
+async function initThreeEngine() {
+  if (threeEngine.THREE) return;
+  var THREE = await import('three');
+  var OrbitControlsModule = await import('three/addons/controls/OrbitControls.js');
+  threeEngine.THREE = THREE;
+  threeEngine.OrbitControls = OrbitControlsModule.OrbitControls;
+}
+
+function cameraPresetForAngle(angle, target) {
+  // Returns {position, target} relative to the scene target
+  var presets = {
+    hero: { pos: [18, 12, 30], target: [0, 4, 0] },
+    front: { pos: [0, 6, 32], target: [0, 4, 0] },
+    top: { pos: [0, 30, 0.5], target: [0, 0, 0] },
+    profile: { pos: [32, 6, 0], target: [0, 4, 0] },
+    low: { pos: [0, 2.2, 28], target: [0, 5, 0] }
+  };
+  return presets[angle] || presets.hero;
+}
+
+async function playScene(idx, inSequence) {
+  if (!STATE.storyboard) return;
+  if (idx < 0 || idx >= STATE.storyboard.length) return;
+  STATE.currentSceneIdx = idx;
+
+  // Update tile highlight
+  var tiles = document.querySelectorAll('.scene-tile');
+  for (var t = 0; t < tiles.length; t++) {
+    if (parseInt(tiles[t].getAttribute('data-idx'), 10) === idx) tiles[t].classList.add('active');
+    else tiles[t].classList.remove('active');
+  }
+  $('scene-info').textContent = 'Scene ' + (idx+1) + ' / ' + STATE.storyboard.length;
+
+  await initThreeEngine();
+  var THREE = threeEngine.THREE;
+  var OrbitControls = threeEngine.OrbitControls;
+  var container = $('preview-stage');
+  var canvas = $('three-canvas');
+  $('preview-empty').classList.add('hidden');
+  canvas.classList.remove('hidden');
+
+  // Tear down previous
+  if (threeEngine.animationId) { cancelAnimationFrame(threeEngine.animationId); threeEngine.animationId = null; }
+  if (threeEngine.renderer) { threeEngine.renderer.dispose(); }
+
+  var scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x050508);
+  scene.fog = new THREE.Fog(0x050508, 25, 90);
+  threeEngine.scene = scene;
+
+  var width = container.clientWidth, height = container.clientHeight;
+  var camera = new THREE.PerspectiveCamera(40, width/height, 0.1, 300);
+  threeEngine.camera = camera;
+
+  var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, preserveDrawingBuffer: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(width, height);
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.05;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  threeEngine.renderer = renderer;
+
+  // Lights
+  var key = new THREE.DirectionalLight(0xffd9a8, 2.8);
+  key.position.set(12, 20, 10);
+  key.castShadow = true;
+  key.shadow.mapSize.set(2048, 2048);
+  key.shadow.camera.left = -30; key.shadow.camera.right = 30; key.shadow.camera.top = 30; key.shadow.camera.bottom = -10;
+  key.shadow.camera.near = 0.5; key.shadow.camera.far = 80;
+  key.shadow.bias = -0.0005;
+  scene.add(key);
+  var fill = new THREE.DirectionalLight(0x5588cc, 0.9);
+  fill.position.set(-15, 8, -5);
+  scene.add(fill);
+  scene.add(new THREE.AmbientLight(0xffffff, 0.35));
+
+  // Ground
+  var ground = new THREE.Mesh(new THREE.PlaneGeometry(120,120), new THREE.MeshStandardMaterial({ color: 0x0c0c12, roughness: 0.9, metalness: 0.05 }));
+  ground.rotation.x = -Math.PI/2;
+  ground.receiveShadow = true;
+  scene.add(ground);
+  var grid = new THREE.GridHelper(80, 40, 0x1f1f2a, 0x14141a);
+  grid.position.y = 0.01;
+  scene.add(grid);
+
+  // Controls
+  var controls = new OrbitControls(camera, canvas);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.minDistance = 6;
+  controls.maxDistance = 70;
+  controls.maxPolarAngle = Math.PI * 0.49;
+  controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
+  threeEngine.controls = controls;
+
+  // Build scene
+  var sceneData = STATE.storyboard[idx];
+  var sceneElements = null;
+  if (sceneData.type === 'waterfall_3d') sceneElements = buildWaterfall3D(THREE, scene, sceneData);
+  else if (sceneData.type === 'title_3d') sceneElements = buildTitle3D(THREE, scene, sceneData);
+  else if (sceneData.type === 'closing_3d') sceneElements = buildClosing3D(THREE, scene, sceneData);
+  else if (sceneData.type === 'headline_3d') sceneElements = buildHeadline3D(THREE, scene, sceneData);
+  else {
+    // Unknown 3D scene - skip
+    if (inSequence) return;
+  }
+  threeEngine.currentSceneElements = sceneElements;
+
+  // Determine camera sequence
+  var angles = sceneData.camera_sequence || (sceneData.camera_angle ? [sceneData.camera_angle] : ['hero']);
+  // Filter to only selected angles (safety)
+  angles = angles.filter(function(a){ return STATE.selectedAngles.indexOf(a) >= 0; });
+  if (angles.length === 0) angles = [STATE.selectedAngles[0] || 'hero'];
+
+  // Set initial camera
+  var firstPreset = cameraPresetForAngle(angles[0]);
+  camera.position.set(firstPreset.pos[0], firstPreset.pos[1], firstPreset.pos[2]);
+  controls.target.set(firstPreset.target[0], firstPreset.target[1], firstPreset.target[2]);
+  controls.update();
+
+  threeEngine.resetCamera = function() {
+    var p = cameraPresetForAngle(angles[0]);
+    camera.position.set(p.pos[0], p.pos[1], p.pos[2]);
+    controls.target.set(p.target[0], p.target[1], p.target[2]);
+    controls.update();
+  };
+
+  // Animation loop
+  var duration = (sceneData.duration || 6) * 1000;
+  threeEngine.currentStart = performance.now();
+  threeEngine.currentDuration = duration;
+
+  var onResize = function() { var w = container.clientWidth, h = container.clientHeight; camera.aspect = w/h; camera.updateProjectionMatrix(); renderer.setSize(w,h); };
+  window.addEventListener('resize', onResize);
+
+  return new Promise(function(resolve) {
+    function animate() {
+      var now = performance.now();
+      var elapsed = (now - threeEngine.currentStart);
+      var t = elapsed / 1000; // seconds
+      var p = Math.min(1, elapsed / duration);
+
+      // Camera interpolation between angles
+      if (angles.length > 1) {
+        var segDur = 1 / (angles.length - 1);
+        // Hold first 10%, animate transitions in the middle 80%, hold last 10%
+        var holdStart = 0.1, holdEnd = 0.9;
+        var animP = Math.min(1, Math.max(0, (p - holdStart) / (holdEnd - holdStart)));
+        var rawIdx = animP * (angles.length - 1);
+        var i0 = Math.floor(rawIdx);
+        var i1 = Math.min(angles.length - 1, i0 + 1);
+        var frac = rawIdx - i0;
+        // Smooth ease for camera moves
+        var eased = frac < 0.5 ? 2*frac*frac : 1 - Math.pow(-2*frac+2, 2)/2;
+        var a = cameraPresetForAngle(angles[i0]);
+        var b = cameraPresetForAngle(angles[i1]);
+        camera.position.set(a.pos[0] + (b.pos[0] - a.pos[0]) * eased, a.pos[1] + (b.pos[1] - a.pos[1]) * eased, a.pos[2] + (b.pos[2] - a.pos[2]) * eased);
+        controls.target.set(a.target[0] + (b.target[0] - a.target[0]) * eased, a.target[1] + (b.target[1] - a.target[1]) * eased, a.target[2] + (b.target[2] - a.target[2]) * eased);
+      }
+
+      if (sceneElements && sceneElements.update) sceneElements.update(t);
+      controls.update();
+      renderer.render(scene, camera);
+
+      // Progress bar
+      $('scene-progress-bar').style.width = (p * 100).toFixed(1) + '%';
+
+      if (p >= 1) {
+        // Scene complete
+        threeEngine.animationId = null;
+        window.removeEventListener('resize', onResize);
+        resolve();
+        return;
+      }
+      threeEngine.animationId = requestAnimationFrame(animate);
+    }
+    animate();
+  });
+}
+
+/* ============ 3D SCENE BUILDERS ============ */
+
+function buildWaterfall3D(THREE, scene, sceneData) {
+  var d = sceneData.data || {};
+  var steps = d.steps || [];
+  if (steps.length === 0) return null;
+
+  var BAR_WIDTH = 1.8, BAR_DEPTH = 1.8, GAP = 0.6;
+  var Y_SCALE = 0.015;
+
+  // Normalise: compute running values to find max
+  var maxRunning = 0, running = 0;
+  for (var p = 0; p < steps.length; p++) {
+    var st = steps[p], k = st.kind, v = st.value || 0;
+    if (k === 'start' || k === 'total' || k === 'end') running = Math.abs(v);
+    else if (k === 'add') running += Math.abs(v);
+    else if (k === 'subtract') running -= Math.abs(v);
+    if (running > maxRunning) maxRunning = running;
+  }
+  var IDEAL_MAX = 10;
+  if (maxRunning > 0) Y_SCALE = IDEAL_MAX / maxRunning;
+
+  var totalWidth = steps.length * (BAR_WIDTH + GAP) - GAP;
+  var startX = -totalWidth / 2 + BAR_WIDTH / 2;
+
+  var COLOR_START = new THREE.Color(0x6b7a8f);
+  var COLOR_ADD = new THREE.Color(0x10b981);
+  var COLOR_SUB = new THREE.Color(0xef4444);
+  var COLOR_TOTAL = new THREE.Color(0x3b82f6);
+  var COLOR_END = new THREE.Color(0xd4a44c);
+  var COLOR_HIGHLIGHT = new THREE.Color(0xe8b85a);
+
+  var bars = [];
+  running = 0;
+  for (var i = 0; i < steps.length; i++) {
+    var s0 = steps[i];
+    var absVal = Math.abs(s0.value || 0);
+    var kind = s0.kind || 'add';
+    var x = startX + i * (BAR_WIDTH + GAP);
+    var barHeight = absVal * Y_SCALE;
+    var baseY = 0, color = COLOR_ADD;
+
+    if (kind === 'start') { baseY = 0; color = COLOR_START; running = absVal; }
+    else if (kind === 'end') { baseY = 0; color = COLOR_END; running = absVal; }
+    else if (kind === 'total') { baseY = 0; color = COLOR_TOTAL; running = absVal; }
+    else if (kind === 'add') { baseY = running * Y_SCALE; color = COLOR_ADD; running += absVal; }
+    else if (kind === 'subtract') { baseY = (running - absVal) * Y_SCALE; color = COLOR_SUB; running -= absVal; }
+    if (s0.highlight) color = COLOR_HIGHLIGHT;
+
+    var geo = new THREE.BoxGeometry(BAR_WIDTH, 1, BAR_DEPTH);
+    var mat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.35, metalness: 0.25, emissive: color, emissiveIntensity: s0.highlight ? 0.4 : 0.1 });
+    var bar = new THREE.Mesh(geo, mat);
+    bar.position.set(x, baseY, 0);
+    bar.scale.y = 0.001;
+    bar.castShadow = true;
+    bar.receiveShadow = true;
+    scene.add(bar);
+
+    // Value pill (floating above bar)
+    var prefix = d.prefix || '';
+    var unit = d.unit ? ' ' + d.unit : '';
+    var signedVal = s0.value;
+    var displayVal = (signedVal < 0 ? '-' : '') + prefix + Math.abs(signedVal).toLocaleString('en-IN') + unit;
+    var valueSprite = makeTextSprite(THREE, displayVal, { fontSize: 54, color: '#ede9e0', weight: '800', bgColor: 'rgba(12,12,18,0.88)', padX: 24, padY: 10 });
+    valueSprite.position.set(x, baseY + barHeight + 1.1, 0);
+    var vw = valueSprite.userData.textWidth / 60;
+    var vh = valueSprite.userData.textHeight / 60;
+    valueSprite.scale.set(vw, vh, 1);
+    valueSprite.material.opacity = 0;
+    valueSprite.userData.baseY = baseY + barHeight + 1.1;
+    scene.add(valueSprite);
+
+    // Period label (below the floor at bar's x)
+    var periodSprite = makeTextSprite(THREE, (s0.label || '').toUpperCase(), { fontSize: 36, color: '#8a8580', weight: '600', letterSpacing: 0.2 });
+    periodSprite.position.set(x, -0.6, 0);
+    var pw = periodSprite.userData.textWidth / 80;
+    var ph = periodSprite.userData.textHeight / 80;
+    periodSprite.scale.set(pw, ph, 1);
+    periodSprite.material.opacity = 0;
+    scene.add(periodSprite);
+
+    bars.push({
+      mesh: bar, valueSprite: valueSprite, periodSprite: periodSprite,
+      targetHeight: barHeight, baseY: baseY,
+      appearTime: 0.8 + i * 0.55,
+      valueAppearTime: 0.8 + i * 0.55 + 0.4,
+      periodAppearTime: 0.8 + i * 0.55 + 0.2
+    });
+  }
+
+  // Scene title
+  var titleSprite = makeTextSprite(THREE, d.title || '', { fontSize: 72, color: '#ede9e0', weight: '400', italic: true });
+  titleSprite.position.set(0, IDEAL_MAX + 4, 0);
+  var tw = titleSprite.userData.textWidth / 60;
+  var th = titleSprite.userData.textHeight / 60;
+  titleSprite.scale.set(tw, th, 1);
+  scene.add(titleSprite);
+
+  return {
+    update: function(t) {
+      for (var b = 0; b < bars.length; b++) {
+        var bar = bars[b];
+        var dt = Math.max(0, Math.min(1, (t - bar.appearTime) / 0.65));
+        var eased = 1 - Math.pow(1 - dt, 3);
+        bar.mesh.scale.y = Math.max(0.001, bar.targetHeight * eased);
+        bar.mesh.position.y = bar.baseY + (bar.targetHeight * eased) / 2;
+
+        // Value sprite
+        var vA = Math.max(0, Math.min(1, (t - bar.valueAppearTime) / 0.5));
+        bar.valueSprite.material.opacity = vA;
+        // Sync to bar height
+        bar.valueSprite.position.y = bar.baseY + bar.targetHeight * eased + 1.1;
+
+        // Period label
+        var pA = Math.max(0, Math.min(1, (t - bar.periodAppearTime) / 0.4));
+        bar.periodSprite.material.opacity = pA * 0.9;
+      }
+    }
+  };
+}
+
+function buildTitle3D(THREE, scene, sceneData) {
+  var d = sceneData.data || {};
+  var group = new THREE.Group();
+
+  var titleSprite = makeTextSprite(THREE, d.title || 'Untitled', { fontSize: 140, color: '#ede9e0', weight: '900' });
+  titleSprite.position.set(0, 5.5, 0);
+  var tw = titleSprite.userData.textWidth / 50;
+  var th = titleSprite.userData.textHeight / 50;
+  titleSprite.scale.set(tw, th, 1);
+  titleSprite.material.opacity = 0;
+  scene.add(titleSprite);
+
+  var subSprite = null;
+  if (d.subtitle) {
+    subSprite = makeTextSprite(THREE, d.subtitle, { fontSize: 62, color: '#d4a44c', italic: true });
+    subSprite.position.set(0, 3, 0);
+    var sw = subSprite.userData.textWidth / 60;
+    var sh = subSprite.userData.textHeight / 60;
+    subSprite.scale.set(sw, sh, 1);
+    subSprite.material.opacity = 0;
+    scene.add(subSprite);
+  }
+  var coSprite = null;
+  if (d.company) {
+    coSprite = makeTextSprite(THREE, d.company.toUpperCase(), { fontSize: 30, color: '#8a8580', weight: '600', letterSpacing: 0.25 });
+    coSprite.position.set(0, 8, 0);
+    var cw = coSprite.userData.textWidth / 80;
+    var ch = coSprite.userData.textHeight / 80;
+    coSprite.scale.set(cw, ch, 1);
+    coSprite.material.opacity = 0;
+    scene.add(coSprite);
+  }
+
+  return {
+    update: function(t) {
+      var a1 = Math.max(0, Math.min(1, t / 0.8));
+      titleSprite.material.opacity = 1 - Math.pow(1 - a1, 3);
+      if (subSprite) { var a2 = Math.max(0, Math.min(1, (t - 0.4) / 0.8)); subSprite.material.opacity = 1 - Math.pow(1 - a2, 3); }
+      if (coSprite) { var a3 = Math.max(0, Math.min(1, (t - 0.1) / 0.6)); coSprite.material.opacity = 1 - Math.pow(1 - a3, 3); }
+    }
+  };
+}
+
+function buildClosing3D(THREE, scene, sceneData) {
+  var d = sceneData.data || {};
+  var coSprite = makeTextSprite(THREE, d.company || 'Thank you.', { fontSize: 130, color: '#d4a44c', italic: true });
+  coSprite.position.set(0, 5, 0);
+  var cw = coSprite.userData.textWidth / 50;
+  var ch = coSprite.userData.textHeight / 50;
+  coSprite.scale.set(cw, ch, 1);
+  coSprite.material.opacity = 0;
+  scene.add(coSprite);
+
+  var tagSprite = null;
+  if (d.tagline) {
+    tagSprite = makeTextSprite(THREE, d.tagline.toUpperCase(), { fontSize: 30, color: '#8a8580', weight: '600', letterSpacing: 0.3 });
+    tagSprite.position.set(0, 2.8, 0);
+    var tw = tagSprite.userData.textWidth / 80;
+    var th = tagSprite.userData.textHeight / 80;
+    tagSprite.scale.set(tw, th, 1);
+    tagSprite.material.opacity = 0;
+    scene.add(tagSprite);
+  }
+
+  return {
+    update: function(t) {
+      var a1 = Math.max(0, Math.min(1, t / 1.2));
+      coSprite.material.opacity = 1 - Math.pow(1 - a1, 3);
+      if (tagSprite) { var a2 = Math.max(0, Math.min(1, (t - 0.5) / 0.8)); tagSprite.material.opacity = 1 - Math.pow(1 - a2, 3); }
+    }
+  };
+}
+
+function buildHeadline3D(THREE, scene, sceneData) {
+  var d = sceneData.data || {};
+  var prefix = d.prefix || '';
+  var unit = d.unit ? ' ' + d.unit : '';
+  var targetVal = Number(d.value) || 0;
+  var valSprite = makeTextSprite(THREE, prefix + '0' + unit, { fontSize: 220, color: '#d4a44c', weight: '900' });
+  valSprite.position.set(0, 5.5, 0);
+  scene.add(valSprite);
+
+  var lbl = null;
+  if (d.label) {
+    lbl = makeTextSprite(THREE, d.label.toUpperCase(), { fontSize: 44, color: '#ede9e0', weight: '500', letterSpacing: 0.2 });
+    lbl.position.set(0, 2.2, 0);
+    var lw = lbl.userData.textWidth / 70;
+    var lh = lbl.userData.textHeight / 70;
+    lbl.scale.set(lw, lh, 1);
+    lbl.material.opacity = 0;
+    scene.add(lbl);
+  }
+
+  var delta = null;
+  if (d.delta_pct != null) {
+    var dir = d.delta_direction || 'up';
+    var arrow = dir === 'up' ? '\u2191' : (dir === 'down' ? '\u2193' : '\u2192');
+    var color = dir === 'up' ? '#10b981' : (dir === 'down' ? '#ef4444' : '#8a8580');
+    var sign = d.delta_pct > 0 ? '+' : '';
+    delta = makeTextSprite(THREE, arrow + ' ' + sign + d.delta_pct + '%', { fontSize: 60, color: color, weight: '700' });
+    delta.position.set(0, 0.8, 0);
+    var dw = delta.userData.textWidth / 60;
+    var dh = delta.userData.textHeight / 60;
+    delta.scale.set(dw, dh, 1);
+    delta.material.opacity = 0;
+    scene.add(delta);
+  }
+
+  // Update val sprite is tricky because we'd recreate texture each frame - instead, update its canvas content lazily
+  var lastShownVal = null;
+
+  return {
+    update: function(t) {
+      var p = Math.max(0, Math.min(1, t / 1.5));
+      var eased = 1 - Math.pow(1 - p, 3);
+      var current = Math.floor(targetVal * eased);
+      if (p >= 0.98) current = targetVal;
+      if (current !== lastShownVal) {
+        lastShownVal = current;
+        // Recreate sprite texture (inefficient but fine for short intros)
+        var newSprite = makeTextSprite(THREE, prefix + current.toLocaleString('en-IN') + unit, { fontSize: 220, color: '#d4a44c', weight: '900' });
+        newSprite.position.copy(valSprite.position);
+        var nw = newSprite.userData.textWidth / 50;
+        var nh = newSprite.userData.textHeight / 50;
+        newSprite.scale.set(nw, nh, 1);
+        scene.remove(valSprite);
+        if (valSprite.material.map) valSprite.material.map.dispose();
+        valSprite.material.dispose();
+        scene.add(newSprite);
+        valSprite = newSprite;
+      }
+
+      if (lbl) { var a = Math.max(0, Math.min(1, (t - 0.5) / 0.6)); lbl.material.opacity = 1 - Math.pow(1 - a, 3); }
+      if (delta) { var da = Math.max(0, Math.min(1, (t - 0.8) / 0.6)); delta.material.opacity = 1 - Math.pow(1 - da, 3); }
+    }
+  };
+}
+
+/* ============ TEXT SPRITE ============ */
+function makeTextSprite(THREE, text, opts) {
+  opts = opts || {};
+  var fontSize = opts.fontSize || 64;
+  var weight = opts.weight || '400';
+  var color = opts.color || '#ede9e0';
+  var italic = opts.italic || false;
+  var letterSpacing = opts.letterSpacing || 0;
+  var bgColor = opts.bgColor || null;
+  var padX = opts.padX || 30;
+  var padY = opts.padY || 20;
+
+  var canvas = document.createElement('canvas');
+  var ctx = canvas.getContext('2d');
+  var fontStyle = italic ? 'italic' : 'normal';
+  var fontFamily = italic ? '"Cormorant Garamond", serif' : 'Inter, sans-serif';
+  ctx.font = fontStyle + ' ' + weight + ' ' + fontSize + 'px ' + fontFamily;
+
+  var textWidth;
+  if (letterSpacing) {
+    textWidth = 0;
+    for (var i = 0; i < text.length; i++) textWidth += ctx.measureText(text[i]).width + fontSize * letterSpacing;
+    textWidth -= fontSize * letterSpacing;
+  } else {
+    textWidth = ctx.measureText(text).width;
+  }
+
+  canvas.width = Math.ceil(textWidth + padX * 2);
+  canvas.height = Math.ceil(fontSize * 1.35 + padY * 2);
+
+  ctx = canvas.getContext('2d');
+  if (bgColor) {
+    ctx.fillStyle = bgColor;
+    // Rounded rect
+    var r = 12;
+    var x = 0, y = 0, w = canvas.width, h = canvas.height;
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.font = fontStyle + ' ' + weight + ' ' + fontSize + 'px ' + fontFamily;
+  ctx.fillStyle = color;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  if (letterSpacing) {
+    var totalW = 0;
+    for (var j = 0; j < text.length; j++) totalW += ctx.measureText(text[j]).width + fontSize * letterSpacing;
+    totalW -= fontSize * letterSpacing;
+    var xPos = canvas.width/2 - totalW/2;
+    ctx.textAlign = 'left';
+    for (var k = 0; k < text.length; k++) {
+      ctx.fillText(text[k], xPos, canvas.height/2);
+      xPos += ctx.measureText(text[k]).width + fontSize * letterSpacing;
+    }
+  } else {
+    ctx.fillText(text, canvas.width/2, canvas.height/2);
+  }
+
+  var tex = new THREE.CanvasTexture(canvas);
+  tex.anisotropy = 8;
+  tex.minFilter = THREE.LinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  var spriteMat = new THREE.SpriteMaterial({ map: tex, transparent: true });
+  var sprite = new THREE.Sprite(spriteMat);
+  sprite.userData.textWidth = canvas.width;
+  sprite.userData.textHeight = canvas.height;
+  return sprite;
+}
+
+/* ============ START ============ */
+bootstrap();
+</script>
+</body>
+</html>
