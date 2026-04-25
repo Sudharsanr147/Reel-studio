@@ -112,6 +112,9 @@ main { max-width: 1400px; margin: 0 auto; padding: 32px 24px 80px; display: grid
 
 .preview-stage { width: 100%; aspect-ratio: 16 / 9; background: #050508; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; position: relative; }
 .preview-stage canvas { width: 100%; height: 100%; display: block; }
+.preview-stage.fullscreen { position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; aspect-ratio: auto; border-radius: 0; border: none; z-index: 500; }
+.fullscreen-exit { position: fixed; top: 16px; right: 16px; background: rgba(15,15,20,0.85); backdrop-filter: blur(8px); border: 1px solid var(--line-strong); color: var(--ink); padding: 10px 16px; border-radius: 6px; font: inherit; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; cursor: pointer; z-index: 510; font-weight: 600; }
+.fullscreen-exit:hover { border-color: var(--accent); color: var(--accent); }
 .preview-empty { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 40px; color: var(--ink-dim); }
 .preview-empty .icon { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 64px; color: var(--ink-faint); margin-bottom: 10px; }
 
@@ -282,9 +285,22 @@ main { max-width: 1400px; margin: 0 auto; padding: 32px 24px 80px; display: grid
         <button class="btn ghost tiny" id="btn-play-all">Play All</button>
         <button class="btn ghost tiny" id="btn-replay">Replay scene</button>
         <button class="btn ghost tiny" id="btn-reset-camera">Reset view</button>
+        <button class="btn ghost tiny" id="btn-fullscreen">Fullscreen</button>
       </div>
       <div class="scene-progress hidden" id="scene-progress"><div class="scene-progress-bar" id="scene-progress-bar"></div></div>
       <div class="scene-nav hidden" id="scene-nav"></div>
+
+      <div id="refine-box" class="hidden" style="margin-top:14px;padding:14px;background:var(--bg-2);border:1px solid var(--line);border-radius:8px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <span class="mono-label accent">Refine current scene</span>
+          <span class="mono-label" id="refine-scene-label" style="color:var(--ink-faint);">Scene 1</span>
+        </div>
+        <textarea id="refine-input" placeholder="Describe what to change. Example: make bars wider, add a legend, reduce timeline marker size, change year font color." style="width:100%;min-height:80px;background:var(--bg);border:1px solid var(--line-strong);color:var(--ink);padding:10px 12px;font:inherit;font-family:'Inter',sans-serif;font-size:12px;border-radius:6px;line-height:1.5;resize:vertical;"></textarea>
+        <div style="display:flex;gap:10px;margin-top:10px;">
+          <button class="btn primary tiny" id="btn-refine-apply">Apply refinement</button>
+          <span class="mono-label" style="color:var(--ink-faint);align-self:center;">Costs ~Rs 5-15 per refinement.</span>
+        </div>
+      </div>
 
       <div class="render-status" id="render-status"></div>
 
@@ -642,21 +658,94 @@ $('btn-custom-error-fix').onclick = async function() {
     if (!Array.isArray(fixed) || fixed.length === 0) throw new Error('Fix must be a non-empty array');
     var fixedScene = fixed[0];
 
-    // Replace the current scene in the storyboard
-    STATE.storyboard[STATE.currentSceneIdx] = fixedScene;
+    // Replace the BROKEN scene (use the index stored at error time, not currentSceneIdx).
+    var targetIdx = (LAST_CUSTOM_ERROR && typeof LAST_CUSTOM_ERROR.sceneIdx === 'number' && LAST_CUSTOM_ERROR.sceneIdx >= 0)
+      ? LAST_CUSTOM_ERROR.sceneIdx
+      : STATE.currentSceneIdx;
+    STATE.storyboard[targetIdx] = fixedScene;
+    STATE.currentSceneIdx = targetIdx;
+    renderSceneNav();
     $('json-viewer').textContent = JSON.stringify(STATE.storyboard, null, 2);
     $('custom-error-box').classList.add('hidden');
     LAST_CUSTOM_ERROR = null;
 
     // Replay the scene with the new code
     toast('Replaying with fix...');
-    await playScene(STATE.currentSceneIdx);
+    await playScene(targetIdx);
   } catch (err) {
     console.error(err);
     toast('Fix attempt failed: ' + err.message, true);
   } finally {
     btn.disabled = false;
     btn.textContent = 'Ask Claude to fix it';
+  }
+};
+
+/* ============ REFINE HANDLER ============ */
+$('btn-refine-apply').onclick = async function() {
+  if (!STATE.storyboard) { toast('No scene loaded', true); return; }
+  if (!STATE.apiKey) { toast('API key required', true); return; }
+  var notes = $('refine-input').value.trim();
+  if (!notes) { toast('Type a refinement first', true); return; }
+
+  var btn = $('btn-refine-apply');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loader"></span> Refining';
+
+  var idx = STATE.currentSceneIdx;
+  var currentScene = STATE.storyboard[idx];
+
+  var userContent = [
+    'Refine this single scene based on the user\'s notes. Return ONLY a JSON array with ONE corrected scene object (same type, same structure). Do not change scene type unless absolutely necessary.',
+    '',
+    'Current scene JSON:',
+    JSON.stringify(currentScene, null, 2),
+    '',
+    'User refinement notes:',
+    notes,
+    '',
+    'Important rules:',
+    '- Output a JSON array with exactly one scene: [ {refined scene} ]',
+    '- Keep the same scene "type" if at all possible',
+    '- Preserve "duration", "camera_angle"/"camera_sequence" unless the user asks to change them',
+    '- For custom_3d scenes, the code must follow the same sandbox rules (no window., document.body, localStorage, fetch, etc.)',
+    '- Use ONLY the user-selected camera angles: ' + STATE.selectedAngles.join(', ')
+  ].join('\n');
+
+  try {
+    var response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': STATE.apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 16000, system: STORYBOARD_SYSTEM_PROMPT, messages: [{ role: 'user', content: userContent }] })
+    });
+    if (!response.ok) { var errText = await response.text(); throw new Error('API error ' + response.status + ': ' + errText); }
+    var data = await response.json();
+    var content = data.content && data.content[0] && data.content[0].text;
+    if (!content) throw new Error('Empty response');
+    if (data.stop_reason === 'max_tokens') {
+      throw new Error('Refinement was cut off by token limit. Try a smaller change.\n\nFirst part of cut-off response:\n' + content.substring(0, 600));
+    }
+    content = content.replace(/^```json\s*/i, '').replace(/^```\s*/, '').replace(/\s*```$/, '').trim();
+
+    var refined;
+    try { refined = JSON.parse(content); } catch (e) { throw new Error('Could not parse refinement:\n' + content.substring(0, 400)); }
+    if (!Array.isArray(refined) || refined.length === 0) throw new Error('Refinement must be a non-empty array');
+    var newScene = refined[0];
+
+    // Replace exactly one scene at the current index
+    STATE.storyboard[idx] = newScene;
+    $('json-viewer').textContent = JSON.stringify(STATE.storyboard, null, 2);
+    renderSceneNav();
+    $('refine-input').value = '';
+    toast('Refinement applied. Replaying...');
+    await playScene(idx);
+  } catch (err) {
+    console.error(err);
+    toast('Refinement failed: ' + err.message, true);
+    showFatalError('Refinement failed:\n\n' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Apply refinement';
   }
 };
 
@@ -674,10 +763,53 @@ function renderSceneNav() {
   $('scene-nav').classList.remove('hidden');
   $('scene-controls').classList.remove('hidden');
   $('scene-progress').classList.remove('hidden');
+  $('refine-box').classList.remove('hidden');
+  updateRefineLabel();
+}
+
+function updateRefineLabel() {
+  if (!STATE.storyboard) return;
+  $('refine-scene-label').textContent = 'Scene ' + (STATE.currentSceneIdx + 1) + ' / ' + STATE.storyboard.length;
 }
 
 $('btn-replay').onclick = function() { playScene(STATE.currentSceneIdx); };
 $('btn-reset-camera').onclick = function() { if (threeEngine.resetCamera) threeEngine.resetCamera(); };
+
+/* ============ FULLSCREEN ============ */
+function toggleFullscreen() {
+  var stage = $('preview-stage');
+  var existingExit = document.getElementById('fullscreen-exit-btn');
+  if (stage.classList.contains('fullscreen')) {
+    stage.classList.remove('fullscreen');
+    if (existingExit) existingExit.remove();
+    document.body.style.overflow = '';
+  } else {
+    stage.classList.add('fullscreen');
+    document.body.style.overflow = 'hidden';
+    var exitBtn = document.createElement('button');
+    exitBtn.id = 'fullscreen-exit-btn';
+    exitBtn.className = 'fullscreen-exit';
+    exitBtn.textContent = 'Exit fullscreen';
+    exitBtn.onclick = toggleFullscreen;
+    document.body.appendChild(exitBtn);
+  }
+  // Force renderer to resize to new dimensions
+  if (threeEngine.renderer && threeEngine.camera) {
+    setTimeout(function() {
+      var w = stage.clientWidth;
+      var h = stage.clientHeight;
+      threeEngine.camera.aspect = w / h;
+      threeEngine.camera.updateProjectionMatrix();
+      threeEngine.renderer.setSize(w, h);
+    }, 50);
+  }
+}
+$('btn-fullscreen').onclick = toggleFullscreen;
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && $('preview-stage').classList.contains('fullscreen')) {
+    toggleFullscreen();
+  }
+});
 $('btn-play-all').onclick = async function() {
   if (!STATE.storyboard) return;
   var btn = $('btn-play-all'); btn.disabled = true; btn.textContent = 'Playing...';
@@ -728,6 +860,7 @@ async function playScene(idx, inSequence) {
     else tiles[t].classList.remove('active');
   }
   $('scene-info').textContent = 'Scene ' + (idx+1) + ' / ' + STATE.storyboard.length;
+  updateRefineLabel();
 
   await initThreeEngine();
   var THREE = threeEngine.THREE;
@@ -1070,7 +1203,16 @@ function buildCustom3D(THREE, scene, camera, sceneData) {
 }
 
 function showCustomError(msg, sceneData) {
-  LAST_CUSTOM_ERROR = { message: msg, scene: sceneData };
+  // Capture the scene's index in the storyboard right now, so a later fix
+  // replaces the broken scene rather than wherever currentSceneIdx happens to be.
+  var sceneIdx = -1;
+  if (STATE.storyboard) {
+    for (var i = 0; i < STATE.storyboard.length; i++) {
+      if (STATE.storyboard[i] === sceneData) { sceneIdx = i; break; }
+    }
+    if (sceneIdx === -1) sceneIdx = STATE.currentSceneIdx;
+  }
+  LAST_CUSTOM_ERROR = { message: msg, scene: sceneData, sceneIdx: sceneIdx };
   var box = $('custom-error-box');
   if (box) {
     box.classList.remove('hidden');
