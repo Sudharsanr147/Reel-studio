@@ -287,6 +287,16 @@ main { max-width: 1400px; margin: 0 auto; padding: 32px 24px 80px; display: grid
       <div class="scene-nav hidden" id="scene-nav"></div>
 
       <div class="render-status" id="render-status"></div>
+
+      <div id="custom-error-box" class="hidden" style="margin-top:14px;padding:16px;background:#1c0a0a;border:1px solid #551818;border-radius:8px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <span class="mono-label" style="color:#ef6b6b;">Custom scene error</span>
+          <button class="btn ghost tiny" id="btn-custom-error-dismiss" style="border-color:#551818;color:#ef6b6b;">Dismiss</button>
+        </div>
+        <pre id="custom-error-msg" style="color:#ffb3b3;font-family:'JetBrains Mono',monospace;font-size:11px;white-space:pre-wrap;word-break:break-word;max-height:200px;overflow:auto;margin-bottom:12px;"></pre>
+        <button class="btn primary tiny" id="btn-custom-error-fix">Ask Claude to fix it</button>
+      </div>
+
       <div class="json-viewer hidden" id="json-viewer"></div>
     </section>
   </main>
@@ -447,6 +457,36 @@ var STORYBOARD_SYSTEM_PROMPT = [
   '',
   'closing_3d: End card. data: {company, tagline}',
   '',
+  'custom_3d: WRITE YOUR OWN Three.js CODE to render a fully custom visualization.',
+  '  USE THIS WHEN:',
+  '  - User describes a specific visual that does NOT fit a template (variable-width bars, timeline morphing, custom metaphors)',
+  '  - Data has dimensions (multi-year + multi-category + continuous) that templates cannot express',
+  '  - User explicitly describes visuals like "mountain graph", "X-axis as real estate", "timeline where year changes graph"',
+  '',
+  '  data: {',
+  '    title: string,',
+  '    description: string (what this visualization shows, for user reference),',
+  '    payload: object (any data structure your code needs - you pick the shape),',
+  '    code: string (JavaScript code, see contract below)',
+  '  }',
+  '',
+  '  CODE CONTRACT (very important):',
+  '  - The code string is a JavaScript FUNCTION BODY that will be wrapped like:',
+  '    function render(THREE, scene, camera, data, helpers) { <YOUR_CODE_HERE> }',
+  '  - You have access to: THREE (the Three.js module), scene (THREE.Scene), camera (THREE.PerspectiveCamera), data (your payload object), helpers.makeTextSprite(text, opts).',
+  '  - Return an object with optional "update" function: return { update: function(t, dt) { /* animate */ } };',
+  '  - t is elapsed seconds since scene start. dt is delta since last frame.',
+  '  - DO NOT use: window, document.body, fetch, localStorage, firebase, XMLHttpRequest, eval, Function.',
+  '  - DO NOT use async/await or setTimeout - use the update() callback for animation.',
+  '  - To create text use helpers.makeTextSprite(str, {fontSize, color, weight, italic, bgColor, padX, padY}).',
+  '  - Positions: scene has a ground plane at y=0. Put objects above it. Camera looks roughly at (0, 4, 0).',
+  '  - Scene already has lighting (key + fill + ambient) and ground plane/grid. You add objects, do not replace lights.',
+  '  - Reasonable size: visualization should fit in roughly a 20x10x20 unit box centered above origin.',
+  '  - Clean up: your objects persist until the next scene replaces them. That is fine.',
+  '',
+  '  EXAMPLE custom_3d code:',
+  '  "var bars = []; for (var i = 0; i < data.items.length; i++) { var item = data.items[i]; var geo = new THREE.BoxGeometry(1, 1, 1); var mat = new THREE.MeshStandardMaterial({color: item.color}); var m = new THREE.Mesh(geo, mat); m.position.set(i * 1.5 - 3, 0.5, 0); m.scale.y = item.value; m.position.y = item.value / 2; scene.add(m); bars.push(m); } var label = helpers.makeTextSprite(data.title, {fontSize: 72, color: \\"#ede9e0\\"}); label.position.set(0, 8, 0); scene.add(label); return { update: function(t) { for (var i = 0; i < bars.length; i++) bars[i].rotation.y = t * 0.3; } };"',
+  '',
   'CAMERA ANGLES AVAILABLE (selected by user):',
   '- "hero": classic 3/4 angle, slightly elevated (default cinematic)',
   '- "front": straight-on frontal view',
@@ -458,7 +498,6 @@ var STORYBOARD_SYSTEM_PROMPT = [
   '- "camera_angle": one of the angle strings, OR',
   '- "camera_sequence": array of angles to cycle through within the scene',
   '- Use ONLY angles from the selected_angles list.',
-  '- For longer scenes (8s+), prefer camera_sequence for cinematic movement.',
   '',
   'DIRECTING RULES:',
   '- Always open with title_3d, close with closing_3d.',
@@ -469,14 +508,14 @@ var STORYBOARD_SYSTEM_PROMPT = [
   '  * Trend over time -> growth_path_3d',
   '  * Single percentage (margin, utilization) -> donut_3d',
   '  * One huge hero number -> headline_3d',
-  '- A 60s video should use 3-4 DIFFERENT scene types, not just one repeated.',
-  '- Follow creative_direction faithfully when given.',
-  '- Scenes 5-10 seconds each. Total 4-6 scenes.',
+  '  * Anything templates cannot express, or specific user creative direction -> custom_3d',
+  '- Follow creative_direction faithfully when given. If user describes a specific non-standard visualization, USE custom_3d and write code that matches their vision.',
+  '- A video should use 3-5 scene types (mix).',
+  '- Scenes 5-15 seconds each. Total 3-6 scenes.',
   '- Use actual numbers; never invent figures.',
-  '- Labels must be SHORT (max 24 chars).',
   '',
-  'EXAMPLE (rich variety):',
-  '[{"type":"title_3d","duration":5,"camera_angle":"front","data":{"title":"Q3 Review","company":"Acme"}},{"type":"kpi_grid_3d","duration":8,"camera_sequence":["hero","front"],"data":{"title":"Key Metrics","items":[{"label":"Revenue","value":142,"prefix":"Rs ","unit":"Cr","delta_pct":23,"delta_direction":"up","highlight":true},{"label":"Margin","value":31,"unit":"%","delta_pct":3,"delta_direction":"up"},{"label":"Headcount","value":420,"delta_pct":8,"delta_direction":"up"}]}},{"type":"waterfall_3d","duration":10,"camera_sequence":["front","hero","low"],"data":{"title":"P&L Bridge","steps":[{"label":"Revenue","value":142,"kind":"start"},{"label":"COGS","value":-43,"kind":"subtract"},{"label":"Gross Profit","value":99,"kind":"total","highlight":true},{"label":"OpEx","value":-55,"kind":"subtract"},{"label":"Net","value":44,"kind":"end","highlight":true}],"unit":"Cr","prefix":"Rs "}},{"type":"closing_3d","duration":4,"camera_angle":"hero","data":{"company":"Acme","tagline":"Thank you"}}]'
+  'EXAMPLE with custom_3d:',
+  '[{"type":"title_3d","duration":5,"camera_angle":"front","data":{"title":"Voter Turnout","company":"Analysis"}},{"type":"custom_3d","duration":15,"camera_sequence":["hero","front"],"data":{"title":"Age groups on X, turnout on Y","description":"Variable-width bars","payload":{"groups":[{"label":"18-20","width":0.22,"height":0.88,"color":"#FF6B6B"}]},"code":"var x=0; var bars=[]; for(var i=0;i<data.payload.groups.length;i++){var g=data.payload.groups[i]; var w=g.width*20; var h=g.height*10; var geo=new THREE.BoxGeometry(w,1,2); var mat=new THREE.MeshStandardMaterial({color:g.color}); var m=new THREE.Mesh(geo,mat); m.position.set(x+w/2-10, h/2, 0); m.scale.y=h; bars.push(m); scene.add(m); var label=helpers.makeTextSprite(g.label,{fontSize:32,color:\\"#ede9e0\\"}); label.position.set(x+w/2-10,-0.5,0); scene.add(label); x+=w;} return {update:function(t){}};"}},{"type":"closing_3d","duration":4,"camera_angle":"hero","data":{"company":"Analysis"}}]'
 ].join('\n');
 
 async function generateStoryboard() {
@@ -510,7 +549,7 @@ async function generateStoryboard() {
     var response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': STATE.apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 3000, system: STORYBOARD_SYSTEM_PROMPT, messages: [{ role: 'user', content: userContent.join('\n') }] })
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 8000, system: STORYBOARD_SYSTEM_PROMPT, messages: [{ role: 'user', content: userContent.join('\n') }] })
     });
     if (!response.ok) { var errText = await response.text(); throw new Error('API error ' + response.status + ': ' + errText); }
     var data = await response.json();
@@ -551,6 +590,69 @@ async function generateStoryboard() {
   }
 }
 $('btn-generate').onclick = generateStoryboard;
+
+/* ============ CUSTOM ERROR HANDLING ============ */
+$('btn-custom-error-dismiss').onclick = function() {
+  $('custom-error-box').classList.add('hidden');
+  LAST_CUSTOM_ERROR = null;
+};
+
+$('btn-custom-error-fix').onclick = async function() {
+  if (!LAST_CUSTOM_ERROR) return;
+  if (!STATE.apiKey) { toast('API key required', true); return; }
+  var btn = $('btn-custom-error-fix');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loader"></span> Fixing';
+
+  var brokenScene = LAST_CUSTOM_ERROR.scene;
+  var errMessage = LAST_CUSTOM_ERROR.message;
+
+  var userContent = [
+    'Your previous custom_3d scene had an error. Here is the broken scene JSON:',
+    JSON.stringify(brokenScene, null, 2),
+    '',
+    'Error:',
+    errMessage,
+    '',
+    'Return ONLY a corrected JSON array containing just this ONE fixed scene (still type custom_3d). ',
+    'Do not include prose. Do not wrap in an object. Start with [ and end with ].',
+    'Make the code work within the sandbox constraints. Avoid forbidden patterns (window., document.body, localStorage, firebase, fetch, etc.).'
+  ].join('\n');
+
+  try {
+    var response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': STATE.apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 8000, system: STORYBOARD_SYSTEM_PROMPT, messages: [{ role: 'user', content: userContent }] })
+    });
+    if (!response.ok) { var errText = await response.text(); throw new Error('API error ' + response.status + ': ' + errText); }
+    var data = await response.json();
+    var content = data.content && data.content[0] && data.content[0].text;
+    if (!content) throw new Error('Empty response');
+    content = content.replace(/^```json\s*/i, '').replace(/^```\s*/, '').replace(/\s*```$/, '').trim();
+
+    var fixed;
+    try { fixed = JSON.parse(content); } catch (e) { throw new Error('Could not parse fix:\n' + content.substring(0, 400)); }
+    if (!Array.isArray(fixed) || fixed.length === 0) throw new Error('Fix must be a non-empty array');
+    var fixedScene = fixed[0];
+
+    // Replace the current scene in the storyboard
+    STATE.storyboard[STATE.currentSceneIdx] = fixedScene;
+    $('json-viewer').textContent = JSON.stringify(STATE.storyboard, null, 2);
+    $('custom-error-box').classList.add('hidden');
+    LAST_CUSTOM_ERROR = null;
+
+    // Replay the scene with the new code
+    toast('Replaying with fix...');
+    await playScene(STATE.currentSceneIdx);
+  } catch (err) {
+    console.error(err);
+    toast('Fix attempt failed: ' + err.message, true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Ask Claude to fix it';
+  }
+};
 
 function renderSceneNav() {
   var sb = STATE.storyboard; if (!sb) return;
@@ -696,6 +798,7 @@ async function playScene(idx, inSequence) {
   else if (sceneData.type === 'kpi_grid_3d') sceneElements = buildKpiGrid3D(THREE, scene, sceneData);
   else if (sceneData.type === 'growth_path_3d') sceneElements = buildGrowthPath3D(THREE, scene, sceneData);
   else if (sceneData.type === 'donut_3d') sceneElements = buildDonut3D(THREE, scene, sceneData);
+  else if (sceneData.type === 'custom_3d') sceneElements = buildCustom3D(THREE, scene, camera, sceneData);
   else {
     // Unknown 3D scene - skip
     if (inSequence) return;
@@ -894,6 +997,83 @@ function buildWaterfall3D(THREE, scene, sceneData) {
     }
   };
 }
+
+/* ============ CUSTOM 3D SCENE (Claude-generated code) ============ */
+
+// Last error for custom_3d scene, to support the "Ask Claude to fix" UI
+var LAST_CUSTOM_ERROR = null;
+
+function buildCustom3D(THREE, scene, camera, sceneData) {
+  var d = sceneData.data || {};
+  var code = d.code;
+  LAST_CUSTOM_ERROR = null;
+
+  if (!code || typeof code !== 'string') {
+    showCustomError('No code provided in custom_3d scene.', sceneData);
+    return { update: function() {} };
+  }
+
+  // Sandbox check: look for forbidden tokens BEFORE executing
+  var forbidden = [
+    'window.', 'document.body', 'document.cookie', 'document.location',
+    'localStorage', 'sessionStorage', 'firebase', 'fetch(', 'fetch ',
+    'XMLHttpRequest', 'eval(', 'eval ', 'Function(',
+    'import(', 'require(',
+    'setTimeout', 'setInterval', 'setImmediate',
+    'navigator.', 'location.', 'history.',
+    'postMessage', 'worker'
+  ];
+  for (var f = 0; f < forbidden.length; f++) {
+    if (code.indexOf(forbidden[f]) >= 0) {
+      var err = 'Code rejected: contains forbidden pattern "' + forbidden[f] + '". The code must only use THREE.js, scene, camera, data, and helpers.';
+      showCustomError(err, sceneData);
+      return { update: function() {} };
+    }
+  }
+
+  // Build helpers object
+  var helpers = {
+    makeTextSprite: function(text, opts) { return makeTextSprite(THREE, text, opts); }
+  };
+
+  // Error recovery wrapper
+  var userRender, updateFn;
+  try {
+    // Wrap the user code in a function that takes our safe arguments
+    // Using Function constructor (NOT eval) with a controlled signature
+    var wrappedCode = 'try {\n' + code + '\n} catch (runtimeErr) {\n  throw runtimeErr;\n}';
+    userRender = new Function('THREE', 'scene', 'camera', 'data', 'helpers', wrappedCode);
+    var result = userRender(THREE, scene, camera, d, helpers);
+    if (result && typeof result.update === 'function') {
+      updateFn = result.update;
+    }
+  } catch (err) {
+    showCustomError('Runtime error: ' + err.message + (err.stack ? '\n\n' + err.stack : ''), sceneData);
+    return { update: function() {} };
+  }
+
+  return {
+    update: function(t, dt) {
+      if (updateFn) {
+        try { updateFn(t, dt); } catch (e) {
+          if (!LAST_CUSTOM_ERROR) showCustomError('Update error: ' + e.message, sceneData);
+        }
+      }
+    }
+  };
+}
+
+function showCustomError(msg, sceneData) {
+  LAST_CUSTOM_ERROR = { message: msg, scene: sceneData };
+  var box = $('custom-error-box');
+  if (box) {
+    box.classList.remove('hidden');
+    $('custom-error-msg').textContent = msg;
+  }
+  toast('Custom scene failed - see error box', true);
+}
+
+/* ============ END CUSTOM 3D ============ */
 
 function buildTitle3D(THREE, scene, sceneData) {
   var d = sceneData.data || {};
