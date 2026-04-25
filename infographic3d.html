@@ -549,12 +549,15 @@ async function generateStoryboard() {
     var response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': STATE.apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 8000, system: STORYBOARD_SYSTEM_PROMPT, messages: [{ role: 'user', content: userContent.join('\n') }] })
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 16000, system: STORYBOARD_SYSTEM_PROMPT, messages: [{ role: 'user', content: userContent.join('\n') }] })
     });
     if (!response.ok) { var errText = await response.text(); throw new Error('API error ' + response.status + ': ' + errText); }
     var data = await response.json();
     var content = data.content && data.content[0] && data.content[0].text;
     if (!content) throw new Error('Empty response');
+    if (data.stop_reason === 'max_tokens') {
+      throw new Error('Response was cut off by the token limit. Try simplifying your creative direction or breaking into smaller scenes.\n\nFirst part of the cut-off response:\n' + content.substring(0, 800));
+    }
     content = content.replace(/^```json\s*/i, '').replace(/^```\s*/, '').replace(/\s*```$/, '').trim();
 
     var storyboard;
@@ -623,12 +626,15 @@ $('btn-custom-error-fix').onclick = async function() {
     var response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': STATE.apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 8000, system: STORYBOARD_SYSTEM_PROMPT, messages: [{ role: 'user', content: userContent }] })
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 16000, system: STORYBOARD_SYSTEM_PROMPT, messages: [{ role: 'user', content: userContent }] })
     });
     if (!response.ok) { var errText = await response.text(); throw new Error('API error ' + response.status + ': ' + errText); }
     var data = await response.json();
     var content = data.content && data.content[0] && data.content[0].text;
     if (!content) throw new Error('Empty response');
+    if (data.stop_reason === 'max_tokens') {
+      throw new Error('Response was cut off by the token limit. Try simplifying your creative direction or breaking into smaller scenes.\n\nFirst part of the cut-off response:\n' + content.substring(0, 800));
+    }
     content = content.replace(/^```json\s*/i, '').replace(/^```\s*/, '').replace(/\s*```$/, '').trim();
 
     var fixed;
