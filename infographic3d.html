@@ -530,6 +530,13 @@ var STORYBOARD_SYSTEM_PROMPT = [
   '- Scenes 5-15 seconds each. Total 3-6 scenes.',
   '- Use actual numbers; never invent figures.',
   '',
+  'CONCISENESS (CRITICAL FOR LONG RESPONSES):',
+  '- Output COMPACT JSON. No newlines or indentation inside scene objects unless needed.',
+  '- Keep "description" field under 200 chars.',
+  '- For custom_3d code: use short variable names, no comments, no extra whitespace.',
+  '- Do NOT pretty-print - your response should be one continuous JSON array.',
+  '- The whole response must fit within reasonable token limits.',
+  '',
   'EXAMPLE with custom_3d:',
   '[{"type":"title_3d","duration":5,"camera_angle":"front","data":{"title":"Voter Turnout","company":"Analysis"}},{"type":"custom_3d","duration":15,"camera_sequence":["hero","front"],"data":{"title":"Age groups on X, turnout on Y","description":"Variable-width bars","payload":{"groups":[{"label":"18-20","width":0.22,"height":0.88,"color":"#FF6B6B"}]},"code":"var x=0; var bars=[]; for(var i=0;i<data.payload.groups.length;i++){var g=data.payload.groups[i]; var w=g.width*20; var h=g.height*10; var geo=new THREE.BoxGeometry(w,1,2); var mat=new THREE.MeshStandardMaterial({color:g.color}); var m=new THREE.Mesh(geo,mat); m.position.set(x+w/2-10, h/2, 0); m.scale.y=h; bars.push(m); scene.add(m); var label=helpers.makeTextSprite(g.label,{fontSize:32,color:\\"#ede9e0\\"}); label.position.set(x+w/2-10,-0.5,0); scene.add(label); x+=w;} return {update:function(t){}};"}},{"type":"closing_3d","duration":4,"camera_angle":"hero","data":{"company":"Analysis"}}]'
 ].join('\n');
@@ -565,7 +572,7 @@ async function generateStoryboard() {
     var response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': STATE.apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 16000, system: STORYBOARD_SYSTEM_PROMPT, messages: [{ role: 'user', content: userContent.join('\n') }] })
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 32000, system: STORYBOARD_SYSTEM_PROMPT, messages: [{ role: 'user', content: userContent.join('\n') }] })
     });
     if (!response.ok) { var errText = await response.text(); throw new Error('API error ' + response.status + ': ' + errText); }
     var data = await response.json();
@@ -642,7 +649,7 @@ $('btn-custom-error-fix').onclick = async function() {
     var response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': STATE.apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 16000, system: STORYBOARD_SYSTEM_PROMPT, messages: [{ role: 'user', content: userContent }] })
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 32000, system: STORYBOARD_SYSTEM_PROMPT, messages: [{ role: 'user', content: userContent }] })
     });
     if (!response.ok) { var errText = await response.text(); throw new Error('API error ' + response.status + ': ' + errText); }
     var data = await response.json();
@@ -716,7 +723,7 @@ $('btn-refine-apply').onclick = async function() {
     var response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': STATE.apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 16000, system: STORYBOARD_SYSTEM_PROMPT, messages: [{ role: 'user', content: userContent }] })
+      body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: 32000, system: STORYBOARD_SYSTEM_PROMPT, messages: [{ role: 'user', content: userContent }] })
     });
     if (!response.ok) { var errText = await response.text(); throw new Error('API error ' + response.status + ': ' + errText); }
     var data = await response.json();
