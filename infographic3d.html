@@ -80,8 +80,12 @@ input:-webkit-autofill { -webkit-box-shadow: 0 0 0 1000px var(--bg-2) inset !imp
 .chip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ink-faint); }
 .chip.live .dot { background: var(--green); box-shadow: 0 0 8px var(--green); }
 
-main { max-width: 1400px; margin: 0 auto; padding: 32px 24px 80px; display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
-@media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+main { max-width: 1400px; margin: 0 auto; padding: 32px 24px 80px; display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: start; }
+.preview-panel { position: sticky; top: 80px; align-self: start; max-height: calc(100vh - 100px); overflow-y: auto; padding-right: 4px; }
+.preview-panel::-webkit-scrollbar { width: 6px; }
+.preview-panel::-webkit-scrollbar-track { background: transparent; }
+.preview-panel::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 3px; }
+@media (max-width: 700px) { main { grid-template-columns: 1fr; } .preview-panel { position: static; max-height: none; overflow-y: visible; } }
 
 .input-panel h2, .preview-panel h2 { font-size: 32px; margin-bottom: 6px; font-style: italic; }
 .input-panel > p, .preview-panel > p { color: var(--ink-dim); font-size: 13px; margin-bottom: 28px; line-height: 1.7; }
@@ -113,8 +117,18 @@ main { max-width: 1400px; margin: 0 auto; padding: 32px 24px 80px; display: grid
 .preview-stage { width: 100%; aspect-ratio: 16 / 9; background: #050508; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; position: relative; }
 .preview-stage canvas { width: 100%; height: 100%; display: block; }
 .preview-stage.fullscreen { position: fixed; top: 0; left: 0; right: 0; bottom: 0; width: 100vw; height: 100vh; aspect-ratio: auto; border-radius: 0; border: none; z-index: 500; }
-.fullscreen-exit { position: fixed; top: 16px; right: 16px; background: rgba(15,15,20,0.85); backdrop-filter: blur(8px); border: 1px solid var(--line-strong); color: var(--ink); padding: 10px 16px; border-radius: 6px; font: inherit; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; cursor: pointer; z-index: 510; font-weight: 600; }
-.fullscreen-exit:hover { border-color: var(--accent); color: var(--accent); }
+.fs-controls { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; align-items: center; background: rgba(15,15,20,0.88); backdrop-filter: blur(12px); border: 1px solid var(--line-strong); border-radius: 8px; padding: 8px 10px; z-index: 510; flex-wrap: wrap; max-width: calc(100vw - 32px); justify-content: center; }
+.fs-controls .fs-btn { background: transparent; border: 1px solid var(--line); color: var(--ink); padding: 7px 12px; font: inherit; font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; font-weight: 600; cursor: pointer; border-radius: 5px; transition: all 0.15s; }
+.fs-controls .fs-btn:hover { border-color: var(--accent); color: var(--accent); }
+.fs-controls .fs-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.fs-controls .fs-btn.primary { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+.fs-controls .fs-btn.primary:hover { background: var(--accent-hot); border-color: var(--accent-hot); color: var(--bg); }
+.fs-controls .fs-btn.exit { border-color: rgba(239,68,68,0.4); color: #ef9a9a; }
+.fs-controls .fs-btn.exit:hover { border-color: var(--red); color: var(--red); }
+.fs-info { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-dim); padding: 0 8px; font-weight: 600; }
+.fs-progress { position: fixed; bottom: 0; left: 0; right: 0; height: 4px; background: rgba(15,15,20,0.6); z-index: 510; }
+.fs-progress-bar { height: 100%; background: var(--accent); width: 0%; transition: width 0.1s linear; }
+@media (max-width: 600px) { .fs-controls { gap: 6px; padding: 6px 8px; } .fs-controls .fs-btn { padding: 6px 9px; font-size: 9px; letter-spacing: 0.1em; } .fs-info { display: none; } }
 .preview-empty { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 40px; color: var(--ink-dim); }
 .preview-empty .icon { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 64px; color: var(--ink-faint); margin-bottom: 10px; }
 
@@ -821,22 +835,109 @@ $('btn-replay').onclick = function() { playScene(STATE.currentSceneIdx); };
 $('btn-reset-camera').onclick = function() { if (threeEngine.resetCamera) threeEngine.resetCamera(); };
 
 /* ============ FULLSCREEN ============ */
+function buildFsControls() {
+  // Top control bar
+  var bar = document.createElement('div');
+  bar.id = 'fs-controls-bar';
+  bar.className = 'fs-controls';
+
+  var btnPlayAll = document.createElement('button');
+  btnPlayAll.className = 'fs-btn primary';
+  btnPlayAll.id = 'fs-btn-play-all';
+  btnPlayAll.textContent = 'Play All';
+  btnPlayAll.onclick = function() { $('btn-play-all').click(); };
+
+  var btnReplay = document.createElement('button');
+  btnReplay.className = 'fs-btn';
+  btnReplay.textContent = 'Replay';
+  btnReplay.onclick = function() { playScene(STATE.currentSceneIdx); };
+
+  var btnPrev = document.createElement('button');
+  btnPrev.className = 'fs-btn';
+  btnPrev.textContent = 'Prev';
+  btnPrev.id = 'fs-btn-prev';
+  btnPrev.onclick = function() {
+    if (!STATE.storyboard) return;
+    var i = Math.max(0, STATE.currentSceneIdx - 1);
+    playScene(i);
+  };
+
+  var btnNext = document.createElement('button');
+  btnNext.className = 'fs-btn';
+  btnNext.textContent = 'Next';
+  btnNext.id = 'fs-btn-next';
+  btnNext.onclick = function() {
+    if (!STATE.storyboard) return;
+    var i = Math.min(STATE.storyboard.length - 1, STATE.currentSceneIdx + 1);
+    playScene(i);
+  };
+
+  var btnReset = document.createElement('button');
+  btnReset.className = 'fs-btn';
+  btnReset.textContent = 'Reset View';
+  btnReset.onclick = function() { if (threeEngine.resetCamera) threeEngine.resetCamera(); };
+
+  var info = document.createElement('span');
+  info.className = 'fs-info';
+  info.id = 'fs-info';
+  var totalScenes = STATE.storyboard ? STATE.storyboard.length : 1;
+  info.textContent = 'Scene ' + (STATE.currentSceneIdx + 1) + ' / ' + totalScenes;
+
+  var btnExit = document.createElement('button');
+  btnExit.className = 'fs-btn exit';
+  btnExit.textContent = 'Exit';
+  btnExit.onclick = toggleFullscreen;
+
+  bar.appendChild(btnPlayAll);
+  bar.appendChild(btnReplay);
+  bar.appendChild(btnPrev);
+  bar.appendChild(btnNext);
+  bar.appendChild(btnReset);
+  bar.appendChild(info);
+  bar.appendChild(btnExit);
+  document.body.appendChild(bar);
+
+  // Bottom progress bar
+  var prog = document.createElement('div');
+  prog.id = 'fs-progress';
+  prog.className = 'fs-progress';
+  var progBar = document.createElement('div');
+  progBar.id = 'fs-progress-bar';
+  progBar.className = 'fs-progress-bar';
+  prog.appendChild(progBar);
+  document.body.appendChild(prog);
+
+  updateFsControlsState();
+}
+
+function updateFsControlsState() {
+  var info = document.getElementById('fs-info');
+  if (info && STATE.storyboard) {
+    info.textContent = 'Scene ' + (STATE.currentSceneIdx + 1) + ' / ' + STATE.storyboard.length;
+  }
+  var prev = document.getElementById('fs-btn-prev');
+  var next = document.getElementById('fs-btn-next');
+  if (prev) prev.disabled = STATE.currentSceneIdx <= 0;
+  if (next) next.disabled = !STATE.storyboard || STATE.currentSceneIdx >= STATE.storyboard.length - 1;
+}
+
+function removeFsControls() {
+  var bar = document.getElementById('fs-controls-bar');
+  if (bar) bar.remove();
+  var prog = document.getElementById('fs-progress');
+  if (prog) prog.remove();
+}
+
 function toggleFullscreen() {
   var stage = $('preview-stage');
-  var existingExit = document.getElementById('fullscreen-exit-btn');
   if (stage.classList.contains('fullscreen')) {
     stage.classList.remove('fullscreen');
-    if (existingExit) existingExit.remove();
+    removeFsControls();
     document.body.style.overflow = '';
   } else {
     stage.classList.add('fullscreen');
     document.body.style.overflow = 'hidden';
-    var exitBtn = document.createElement('button');
-    exitBtn.id = 'fullscreen-exit-btn';
-    exitBtn.className = 'fullscreen-exit';
-    exitBtn.textContent = 'Exit fullscreen';
-    exitBtn.onclick = toggleFullscreen;
-    document.body.appendChild(exitBtn);
+    buildFsControls();
   }
   // Force renderer to resize to new dimensions
   if (threeEngine.renderer && threeEngine.camera) {
@@ -906,6 +1007,7 @@ async function playScene(idx, inSequence) {
   }
   $('scene-info').textContent = 'Scene ' + (idx+1) + ' / ' + STATE.storyboard.length;
   updateRefineLabel();
+  if (typeof updateFsControlsState === 'function') updateFsControlsState();
 
   await initThreeEngine();
   var THREE = threeEngine.THREE;
@@ -1051,8 +1153,11 @@ async function playScene(idx, inSequence) {
       controls.update();
       renderer.render(scene, camera);
 
-      // Progress bar
-      $('scene-progress-bar').style.width = (p * 100).toFixed(1) + '%';
+      // Progress bars (inline + fullscreen if active)
+      var pctStr = (p * 100).toFixed(1) + '%';
+      $('scene-progress-bar').style.width = pctStr;
+      var fsBar = document.getElementById('fs-progress-bar');
+      if (fsBar) fsBar.style.width = pctStr;
 
       if (p >= 1) {
         // Scene complete
