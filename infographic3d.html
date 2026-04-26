@@ -537,9 +537,32 @@ var STORYBOARD_SYSTEM_PROMPT = [
   '- Do NOT pretty-print - your response should be one continuous JSON array.',
   '- The whole response must fit within reasonable token limits.',
   '',
+  'CUSTOM_3D BUDGET (responses get truncated when this is ignored):',
+  '- A single custom_3d code string MUST stay under ~3000 characters.',
+  '- If the user asks for many things in one visualization (animated character + scaling axes + camera moves + multi-stage reveal), pick the 1-2 MOST IMPORTANT ideas and skip the rest. Do not try to deliver everything.',
+  '- Do NOT manipulate the camera inside custom_3d code (no camera.position, no camera.lookAt, no camera.zoom). The engine handles camera angles and sequences. Custom code only adds objects and animates them.',
+  '- Do NOT recreate the ground plane, lights, or fog. They already exist.',
+  '- Prefer one well-executed effect over five half-finished ones. A bouncing ball that lands on the right bar beats a detailed character that gets cut off mid-code.',
+  '- Animated characters: keep geometry minimal (group of 3-5 spheres/boxes). Skip facial expressions, accessories, fur detail.',
+  '- Scaling/morphing axes: skip. Use a fixed scale that fits the largest value.',
+  '',
   'EXAMPLE with custom_3d:',
   '[{"type":"title_3d","duration":5,"camera_angle":"front","data":{"title":"Voter Turnout","company":"Analysis"}},{"type":"custom_3d","duration":15,"camera_sequence":["hero","front"],"data":{"title":"Age groups on X, turnout on Y","description":"Variable-width bars","payload":{"groups":[{"label":"18-20","width":0.22,"height":0.88,"color":"#FF6B6B"}]},"code":"var x=0; var bars=[]; for(var i=0;i<data.payload.groups.length;i++){var g=data.payload.groups[i]; var w=g.width*20; var h=g.height*10; var geo=new THREE.BoxGeometry(w,1,2); var mat=new THREE.MeshStandardMaterial({color:g.color}); var m=new THREE.Mesh(geo,mat); m.position.set(x+w/2-10, h/2, 0); m.scale.y=h; bars.push(m); scene.add(m); var label=helpers.makeTextSprite(g.label,{fontSize:32,color:\\"#ede9e0\\"}); label.position.set(x+w/2-10,-0.5,0); scene.add(label); x+=w;} return {update:function(t){}};"}},{"type":"closing_3d","duration":4,"camera_angle":"hero","data":{"company":"Analysis"}}]'
 ].join('\n');
+
+/* Heuristic: did the model response get cut off mid-output?
+   We look at the trailing characters of the raw text. A clean response will
+   end with ] or }. A truncated one typically ends inside a string or expression. */
+function looksTruncated(s) {
+  if (!s) return false;
+  var trimmed = s.trim();
+  if (trimmed.length === 0) return false;
+  var last = trimmed.charAt(trimmed.length - 1);
+  // Clean endings
+  if (last === ']' || last === '}') return false;
+  // Anything else - mid-string, mid-number, mid-keyword - is suspicious
+  return true;
+}
 
 async function generateStoryboard() {
   if (!STATE.apiKey) { toast('Set your Anthropic API key first', true); openSettings(); return; }
@@ -584,7 +607,12 @@ async function generateStoryboard() {
     content = content.replace(/^```json\s*/i, '').replace(/^```\s*/, '').replace(/\s*```$/, '').trim();
 
     var storyboard;
-    try { storyboard = JSON.parse(content); } catch (e) { throw new Error('Could not parse JSON:\n' + content.substring(0, 800)); }
+    try { storyboard = JSON.parse(content); } catch (e) {
+      if (looksTruncated(content)) {
+        throw new Error('Response was cut off before it could finish. The scene you described is too detailed to generate in one piece.\n\nTry one of:\n- Drop the most complex element (e.g. the animated character, or the rescaling axes)\n- Split into 2 scenes (one for the chart, one for the animation overlay)\n- Pick a simpler creative direction\n\nLast 200 characters of the truncated response:\n...' + content.substring(Math.max(0, content.length - 200)));
+      }
+      throw new Error('Could not parse JSON:\n' + content.substring(0, 800));
+    }
     if (!Array.isArray(storyboard)) {
       var found = null;
       if (storyboard.scenes && Array.isArray(storyboard.scenes)) found = storyboard.scenes;
@@ -661,7 +689,12 @@ $('btn-custom-error-fix').onclick = async function() {
     content = content.replace(/^```json\s*/i, '').replace(/^```\s*/, '').replace(/\s*```$/, '').trim();
 
     var fixed;
-    try { fixed = JSON.parse(content); } catch (e) { throw new Error('Could not parse fix:\n' + content.substring(0, 400)); }
+    try { fixed = JSON.parse(content); } catch (e) {
+      if (looksTruncated(content)) {
+        throw new Error('The fix response was cut off before it could finish. Try simplifying the original scene description and regenerate from scratch.');
+      }
+      throw new Error('Could not parse fix:\n' + content.substring(0, 400));
+    }
     if (!Array.isArray(fixed) || fixed.length === 0) throw new Error('Fix must be a non-empty array');
     var fixedScene = fixed[0];
 
@@ -735,7 +768,12 @@ $('btn-refine-apply').onclick = async function() {
     content = content.replace(/^```json\s*/i, '').replace(/^```\s*/, '').replace(/\s*```$/, '').trim();
 
     var refined;
-    try { refined = JSON.parse(content); } catch (e) { throw new Error('Could not parse refinement:\n' + content.substring(0, 400)); }
+    try { refined = JSON.parse(content); } catch (e) {
+      if (looksTruncated(content)) {
+        throw new Error('Refinement response was cut off before it could finish. Try a smaller, more focused refinement.');
+      }
+      throw new Error('Could not parse refinement:\n' + content.substring(0, 400));
+    }
     if (!Array.isArray(refined) || refined.length === 0) throw new Error('Refinement must be a non-empty array');
     var newScene = refined[0];
 
