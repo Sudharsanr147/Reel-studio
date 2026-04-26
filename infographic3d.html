@@ -1017,10 +1017,16 @@ async function playScene(idx, inSequence) {
   window.addEventListener('resize', onResize);
 
   return new Promise(function(resolve) {
+    var lastFrameTime = null;
     function animate() {
       var now = performance.now();
       var elapsed = (now - threeEngine.currentStart);
       var t = elapsed / 1000; // seconds
+      // dt is seconds since the previous frame. Clamp to avoid huge jumps after tab-switch.
+      var dt;
+      if (lastFrameTime === null) dt = 1 / 60;
+      else dt = Math.min(0.1, (now - lastFrameTime) / 1000);
+      lastFrameTime = now;
       var p = Math.min(1, elapsed / duration);
 
       // Camera interpolation between angles
@@ -1041,7 +1047,7 @@ async function playScene(idx, inSequence) {
         controls.target.set(a.target[0] + (b.target[0] - a.target[0]) * eased, a.target[1] + (b.target[1] - a.target[1]) * eased, a.target[2] + (b.target[2] - a.target[2]) * eased);
       }
 
-      if (sceneElements && sceneElements.update) sceneElements.update(t);
+      if (sceneElements && sceneElements.update) sceneElements.update(t, dt);
       controls.update();
       renderer.render(scene, camera);
 
