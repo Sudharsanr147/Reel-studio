@@ -565,17 +565,42 @@ var STORYBOARD_SYSTEM_PROMPT = [
 ].join('\n');
 
 /* Heuristic: did the model response get cut off mid-output?
-   We look at the trailing characters of the raw text. A clean response will
-   end with ] or }. A truncated one typically ends inside a string or expression. */
-function looksTruncated(s) {
+   The naive "last char is ] or }" check fails when truncation lands inside a
+   string that happens to contain those characters (e.g. "code":"var x = {y:1}
+   gets cut, last char is } even though we're mid-string). Instead we:
+   1. Use the JSON.parse error message if available (most reliable signal).
+   2. Walk the string tracking string-state and bracket depth. If we end inside
+      a string, or with unclosed brackets, the response was cut off. */
+function looksTruncated(s, parseError) {
   if (!s) return false;
   var trimmed = s.trim();
   if (trimmed.length === 0) return false;
-  var last = trimmed.charAt(trimmed.length - 1);
-  // Clean endings
-  if (last === ']' || last === '}') return false;
-  // Anything else - mid-string, mid-number, mid-keyword - is suspicious
-  return true;
+
+  // Signal 1: parse error messages that mean "ran out of input"
+  if (parseError && parseError.message) {
+    var msg = parseError.message.toLowerCase();
+    if (msg.indexOf('unterminated') >= 0) return true;
+    if (msg.indexOf('unexpected end') >= 0) return true;
+    if (msg.indexOf('end of') >= 0 && (msg.indexOf('input') >= 0 || msg.indexOf('json') >= 0 || msg.indexOf('data') >= 0)) return true;
+  }
+
+  // Signal 2: bracket / string balance walk
+  var inStr = false, esc = false, objDepth = 0, arrDepth = 0;
+  for (var i = 0; i < trimmed.length; i++) {
+    var c = trimmed.charAt(i);
+    if (esc) { esc = false; continue; }
+    if (c === '\\') { esc = true; continue; }
+    if (c === '"') { inStr = !inStr; continue; }
+    if (inStr) continue;
+    if (c === '{') objDepth++;
+    else if (c === '}') objDepth--;
+    else if (c === '[') arrDepth++;
+    else if (c === ']') arrDepth--;
+  }
+  if (inStr) return true;
+  if (objDepth > 0 || arrDepth > 0) return true;
+
+  return false;
 }
 
 async function generateStoryboard() {
@@ -622,7 +647,7 @@ async function generateStoryboard() {
 
     var storyboard;
     try { storyboard = JSON.parse(content); } catch (e) {
-      if (looksTruncated(content)) {
+      if (looksTruncated(content, e)) {
         throw new Error('Response was cut off before it could finish. The scene you described is too detailed to generate in one piece.\n\nTry one of:\n- Drop the most complex element (e.g. the animated character, or the rescaling axes)\n- Split into 2 scenes (one for the chart, one for the animation overlay)\n- Pick a simpler creative direction\n\nLast 200 characters of the truncated response:\n...' + content.substring(Math.max(0, content.length - 200)));
       }
       throw new Error('Could not parse JSON:\n' + content.substring(0, 800));
@@ -704,7 +729,7 @@ $('btn-custom-error-fix').onclick = async function() {
 
     var fixed;
     try { fixed = JSON.parse(content); } catch (e) {
-      if (looksTruncated(content)) {
+      if (looksTruncated(content, e)) {
         throw new Error('The fix response was cut off before it could finish. Try simplifying the original scene description and regenerate from scratch.');
       }
       throw new Error('Could not parse fix:\n' + content.substring(0, 400));
@@ -783,7 +808,7 @@ $('btn-refine-apply').onclick = async function() {
 
     var refined;
     try { refined = JSON.parse(content); } catch (e) {
-      if (looksTruncated(content)) {
+      if (looksTruncated(content, e)) {
         throw new Error('Refinement response was cut off before it could finish. Try a smaller, more focused refinement.');
       }
       throw new Error('Could not parse refinement:\n' + content.substring(0, 400));
